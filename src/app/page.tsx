@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Mic, FileText, Brain, Shield, ArrowRight, Check } from 'lucide-react'
+import { Mic, FileText, Brain, Shield, ArrowRight, Check, BookOpen } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -15,9 +15,15 @@ export default function Home() {
             </div>
             <span className="text-lg font-semibold text-gray-900">Dr.Note</span>
           </div>
-          <Link href="/demo" className="btn-primary text-sm py-2 px-4">
-            무료로 시작하기
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dictionary" className="btn-ghost text-sm py-2 px-3">
+              <BookOpen className="w-4 h-4" />
+              용어 사전
+            </Link>
+            <Link href="/demo" className="btn-primary text-sm py-2 px-4">
+              무료로 시작하기
+            </Link>
+          </div>
         </div>
       </header>
 

@@ -60,6 +60,23 @@ export const DEFAULT_MEDICAL_TERMS: MedicalTerm[] = [
   { id: '35', abbreviation: 'bid', full_name: 'Bis In Die', korean_name: '하루 2회', category: 'abbreviation', description: '하루에 두 번', is_active: true },
   { id: '36', abbreviation: 'tid', full_name: 'Ter In Die', korean_name: '하루 3회', category: 'abbreviation', description: '하루에 세 번', is_active: true },
   { id: '37', abbreviation: 'qd', full_name: 'Quaque Die', korean_name: '하루 1회', category: 'abbreviation', description: '하루에 한 번', is_active: true },
+
+  // 추가 정형외과 약어
+  { id: '38', abbreviation: 'LE', full_name: 'Lateral Epicondylitis', korean_name: '외측상과염 (테니스엘보)', category: 'disease', description: '팔꿈치 외측 통증', is_active: true },
+  { id: '39', abbreviation: 'ME', full_name: 'Medial Epicondylitis', korean_name: '내측상과염 (골프엘보)', category: 'disease', description: '팔꿈치 내측 통증', is_active: true },
+  { id: '40', abbreviation: 'RCS', full_name: 'Rotator Cuff Syndrome', korean_name: '회전근개 증후군', category: 'disease', description: '어깨 회전근개 손상', is_active: true },
+  { id: '41', abbreviation: 'CFL', full_name: 'Calcaneofibular Ligament', korean_name: '종비인대', category: 'anatomy', description: '발목 외측 인대', is_active: true },
+  { id: '42', abbreviation: 'ATFL', full_name: 'Anterior Talofibular Ligament', korean_name: '전거비인대', category: 'anatomy', description: '발목 전방 인대', is_active: true },
+  { id: '43', abbreviation: 'ESWT', full_name: 'Extracorporeal Shockwave Therapy', korean_name: '체외충격파치료', category: 'treatment', description: '충격파로 조직 재생 촉진', is_active: true },
+  { id: '44', abbreviation: 'ion', full_name: 'Iontophoresis', korean_name: '이온토포레시스', category: 'treatment', description: '전기를 이용한 약물 침투', is_active: true },
+  { id: '45', abbreviation: 'inj', full_name: 'Injection', korean_name: '주사', category: 'treatment', description: '주사 치료', is_active: true },
+  { id: '46', abbreviation: 'hlase', full_name: 'Hyaluronidase', korean_name: '히알루로니다제', category: 'treatment', description: '관절 주사제', is_active: true },
+  { id: '47', abbreviation: 'manual E', full_name: 'Manual Exercise', korean_name: '도수운동', category: 'treatment', description: '도수치료 운동', is_active: true },
+  { id: '48', abbreviation: 'shldr', full_name: 'Shoulder', korean_name: '어깨', category: 'abbreviation', description: '어깨', is_active: true },
+  { id: '49', abbreviation: 'jt', full_name: 'Joint', korean_name: '관절', category: 'abbreviation', description: '관절', is_active: true },
+  { id: '50', abbreviation: 'c', full_name: 'With', korean_name: '~와 함께', category: 'abbreviation', description: '~와 함께 (처방 시)', is_active: true },
+  { id: '51', abbreviation: 'sprain', full_name: 'Sprain', korean_name: '염좌', category: 'disease', description: '인대 손상', is_active: true },
+  { id: '52', abbreviation: 'PTfree', full_name: 'Physical Therapy (Free)', korean_name: '물리치료 (자유)', category: 'treatment', description: '자유 물리치료', is_active: true },
 ]
 
 // 프롬프트용 사전 문자열 생성

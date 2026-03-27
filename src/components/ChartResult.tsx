@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check, FileText } from 'lucide-react'
+import { Copy, Check, FileText, MessageSquare, Tag } from 'lucide-react'
 
 interface ChartData {
   chart: string
@@ -16,7 +16,7 @@ interface ChartResultProps {
 
 export function ChartResult({ data, transcript }: ChartResultProps) {
   const [copied, setCopied] = useState(false)
-  const [showTranscript, setShowTranscript] = useState(false)
+  const [copiedFull, setCopiedFull] = useState(false)
 
   const handleCopy = () => {
     const text = `${data.chart}${data.note ? `\n-----\n${data.note}` : ''}`
@@ -25,30 +25,50 @@ export function ChartResult({ data, transcript }: ChartResultProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleCopyFull = () => {
+    const text = `[STT 원문]\n${transcript}\n\n[차트]\n${data.chart}${data.note ? `\n-----\n${data.note}` : ''}\n\n[키워드]\n${data.keywords.join(', ')}`
+    navigator.clipboard.writeText(text)
+    setCopiedFull(true)
+    setTimeout(() => setCopiedFull(false), 2000)
+  }
+
   // 차트 텍스트를 줄바꿈으로 분리
   const chartLines = data.chart.split('\\n').join('\n').split('\n')
 
   return (
     <div className="space-y-4">
+      {/* STT 원문 */}
+      {transcript && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-blue-50 px-4 py-2.5 flex items-center gap-2 border-b border-blue-100">
+            <MessageSquare className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">STT 원문</span>
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{transcript}</p>
+          </div>
+        </div>
+      )}
+
       {/* Chart Card */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         {/* Header */}
-        <div className="bg-slate-800 px-5 py-3 flex items-center justify-between">
+        <div className="bg-slate-800 px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-slate-300" />
             <span className="text-sm font-medium text-white">Chart Note</span>
           </div>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded-lg transition-colors"
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? '복사됨' : '복사'}
           </button>
         </div>
 
         {/* Chart Content */}
-        <div className="p-5">
+        <div className="p-4">
           <pre className="font-mono text-sm leading-relaxed text-gray-800 whitespace-pre-wrap">
             {chartLines.map((line, i) => {
               // r/o 라인 강조
@@ -89,8 +109,8 @@ export function ChartResult({ data, transcript }: ChartResultProps) {
 
           {/* Note */}
           {data.note && (
-            <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
-              <p className="text-sm text-gray-500">{data.note}</p>
+            <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+              <p className="text-sm text-gray-500 italic">{data.note}</p>
             </div>
           )}
         </div>
@@ -98,32 +118,36 @@ export function ChartResult({ data, transcript }: ChartResultProps) {
 
       {/* Keywords */}
       {data.keywords.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {data.keywords.map((keyword, i) => (
-            <span
-              key={i}
-              className="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-medium border border-teal-100"
-            >
-              {keyword}
-            </span>
-          ))}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-teal-50 px-4 py-2.5 flex items-center gap-2 border-b border-teal-100">
+            <Tag className="w-4 h-4 text-teal-600" />
+            <span className="text-sm font-medium text-teal-800">추출 키워드</span>
+          </div>
+          <div className="p-4">
+            <div className="flex flex-wrap gap-2">
+              {data.keywords.map((keyword, i) => (
+                <span
+                  key={i}
+                  className="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-full text-sm font-medium border border-teal-100"
+                >
+                  {keyword}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Transcript Toggle */}
+      {/* 전체 복사 버튼 */}
       {transcript && (
-        <div>
+        <div className="text-center">
           <button
-            onClick={() => setShowTranscript(!showTranscript)}
-            className="text-sm text-gray-400 hover:text-gray-600 underline"
+            onClick={handleCopyFull}
+            className="btn-secondary text-sm"
           >
-            {showTranscript ? '원문 숨기기' : '원문 보기'}
+            {copiedFull ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copiedFull ? '전체 복사됨' : '전체 복사 (원문 + 차트 + 키워드)'}
           </button>
-          {showTranscript && (
-            <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{transcript}</p>
-            </div>
-          )}
         </div>
       )}
     </div>

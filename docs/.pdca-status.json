@@ -1,9 +1,165 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-27T06:01:49.685Z",
-  "activeFeatures": [],
-  "primaryFeature": null,
-  "features": {},
+  "lastUpdated": "2026-03-27T08:58:23.289Z",
+  "activeFeatures": [
+    "supabase",
+    "dr-note",
+    "openai",
+    "audio",
+    "transcribe",
+    "summarize",
+    "demo",
+    "preview",
+    "dictionary",
+    "[id]",
+    "records"
+  ],
+  "primaryFeature": "supabase",
+  "features": {
+    "supabase": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:32:48.983Z",
+        "lastUpdated": "2026-03-27T06:33:12.478Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/lib/supabase/index.ts"
+    },
+    "dr-note": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:33:08.666Z",
+        "lastUpdated": "2026-03-27T08:58:23.289Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/components/ChartResult.tsx"
+    },
+    "openai": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:39:54.192Z",
+        "lastUpdated": "2026-03-27T08:10:06.639Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/lib/openai/index.ts"
+    },
+    "audio": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:47:25.750Z",
+        "lastUpdated": "2026-03-27T07:05:01.930Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/components/audio/AudioRecorder.tsx"
+    },
+    "transcribe": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:47:42.070Z",
+        "lastUpdated": "2026-03-27T06:47:42.070Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/api/transcribe/route.ts"
+    },
+    "summarize": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:48:04.446Z",
+        "lastUpdated": "2026-03-27T08:06:34.013Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/api/summarize/route.ts"
+    },
+    "demo": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T06:48:49.160Z",
+        "lastUpdated": "2026-03-27T08:58:01.082Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/demo/page.tsx"
+    },
+    "preview": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T07:25:09.006Z",
+        "lastUpdated": "2026-03-27T07:25:09.006Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/preview/page.tsx"
+    },
+    "dictionary": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T07:30:03.395Z",
+        "lastUpdated": "2026-03-27T07:32:48.207Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/api/dictionary/route.ts"
+    },
+    "[id]": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T07:30:11.674Z",
+        "lastUpdated": "2026-03-27T07:33:02.066Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/api/dictionary/[id]/route.ts"
+    },
+    "records": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-27T08:57:14.804Z",
+        "lastUpdated": "2026-03-27T08:57:14.804Z"
+      },
+      "lastFile": "/Users/ljs/Desktop/DEV/dr-note/src/app/api/records/route.ts"
+    }
+  },
   "pipeline": {
     "currentPhase": 1,
     "level": "Dynamic",
@@ -12,7 +168,326 @@
   "session": {
     "startedAt": "2026-03-27T06:01:49.685Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-27T06:01:49.685Z"
+    "lastActivity": "2026-03-27T08:58:23.289Z"
   },
-  "history": []
+  "history": [
+    {
+      "timestamp": "2026-03-27T06:32:48.983Z",
+      "feature": "supabase",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:32:51.900Z",
+      "feature": "supabase",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:32:53.697Z",
+      "feature": "supabase",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:33:08.666Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:33:12.478Z",
+      "feature": "supabase",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:33:17.695Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:39:54.192Z",
+      "feature": "openai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:40:09.751Z",
+      "feature": "openai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:40:10.507Z",
+      "feature": "openai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:40:17.832Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:40:32.167Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:47:06.050Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:47:25.750Z",
+      "feature": "audio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:47:42.070Z",
+      "feature": "transcribe",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:48:04.446Z",
+      "feature": "summarize",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:48:11.972Z",
+      "feature": "audio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:48:26.321Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T06:48:49.160Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:00:00.859Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:00:41.770Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:01:11.229Z",
+      "feature": "audio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:03:15.968Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:03:58.333Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:04:36.195Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:05:01.930Z",
+      "feature": "audio",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:25:03.357Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:25:09.006Z",
+      "feature": "preview",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:26:39.640Z",
+      "feature": "openai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:26:58.998Z",
+      "feature": "summarize",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:27:26.823Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:27:31.498Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:27:46.326Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:28:07.644Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:30:03.395Z",
+      "feature": "dictionary",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:30:11.674Z",
+      "feature": "[id]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:30:58.117Z",
+      "feature": "dictionary",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:31:46.006Z",
+      "feature": "summarize",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:31:50.636Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:31:55.105Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:32:31.870Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:32:48.207Z",
+      "feature": "dictionary",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:33:02.066Z",
+      "feature": "[id]",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:33:09.473Z",
+      "feature": "summarize",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T07:33:20.947Z",
+      "feature": "summarize",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:06:16.127Z",
+      "feature": "openai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:06:34.013Z",
+      "feature": "summarize",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:06:51.180Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:07:26.516Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:07:43.890Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:10:06.639Z",
+      "feature": "openai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:57:14.804Z",
+      "feature": "records",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:58:01.082Z",
+      "feature": "demo",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-27T08:58:23.289Z",
+      "feature": "dr-note",
+      "phase": "do",
+      "action": "updated"
+    }
+  ]
 }

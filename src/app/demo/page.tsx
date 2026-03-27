@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { AudioRecorder } from '@/components/audio'
 import { ChartResult } from '@/components/ChartResult'
 import { Progress } from '@/components/ui/progress'
-import { ArrowLeft, RotateCcw, Loader2, BookOpen } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Loader2, BookOpen, History, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 
 type ProcessingStep = 'idle' | 'uploading' | 'transcribing' | 'summarizing' | 'done' | 'error'
@@ -14,6 +14,15 @@ interface ChartData {
   chart: string
   note: string
   keywords: string[]
+}
+
+interface ChartRecord {
+  id: string
+  transcript: string
+  chart: string
+  note: string | null
+  keywords: string[]
+  created_at: string
 }
 
 interface ProcessingState {
@@ -43,6 +52,45 @@ const stepMessages: Record<ProcessingStep, string> = {
 
 export default function DemoPage() {
   const [state, setState] = useState<ProcessingState>(initialState)
+  const [records, setRecords] = useState<ChartRecord[]>([])
+  const [showHistory, setShowHistory] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<ChartRecord | null>(null)
+
+  // 기록 불러오기
+  const fetchRecords = useCallback(async () => {
+    try {
+      const response = await fetch('/api/records')
+      const data = await response.json()
+      if (data.records) {
+        setRecords(data.records)
+      }
+    } catch (error) {
+      console.error('Fetch records error:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchRecords()
+  }, [fetchRecords])
+
+  // 기록 저장
+  const saveRecord = useCallback(async (transcript: string, chartData: ChartData) => {
+    try {
+      await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript,
+          chart: chartData.chart,
+          note: chartData.note,
+          keywords: chartData.keywords,
+        }),
+      })
+      fetchRecords()
+    } catch (error) {
+      console.error('Save record error:', error)
+    }
+  }, [fetchRecords])
 
   const processAudio = useCallback(async (audioBlob: Blob) => {
     setState({ ...initialState, step: 'uploading', progress: 10 })
@@ -90,6 +138,9 @@ export default function DemoPage() {
         error: '',
       })
 
+      // DB에 저장
+      saveRecord(transcript, result.data)
+
       toast.success('차트 생성 완료!')
     } catch (error) {
       console.error('Processing error:', error)
@@ -97,10 +148,11 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [])
+  }, [saveRecord])
 
   const resetState = useCallback(() => {
     setState(initialState)
+    setSelectedRecord(null)
   }, [])
 
   // 샘플 데모 실행
@@ -133,6 +185,9 @@ export default function DemoPage() {
         error: '',
       })
 
+      // DB에 저장
+      saveRecord(sampleTranscript, result.data)
+
       toast.success('샘플 차트 생성 완료!')
     } catch (error) {
       console.error('Demo error:', error)
@@ -140,9 +195,36 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [])
+  }, [saveRecord])
+
+  // 기록 선택
+  const selectRecord = (record: ChartRecord) => {
+    setSelectedRecord(record)
+    setState({
+      step: 'done',
+      progress: 100,
+      transcript: record.transcript,
+      chartData: {
+        chart: record.chart,
+        note: record.note || '',
+        keywords: record.keywords,
+      },
+      error: '',
+    })
+    setShowHistory(false)
+  }
 
   const isProcessing = state.step !== 'idle' && state.step !== 'done' && state.step !== 'error'
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('ko-KR', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -162,14 +244,71 @@ export default function DemoPage() {
               <h1 className="text-base font-semibold text-gray-900">Dr.Note</h1>
             </div>
           </div>
-          <Link href="/dictionary" className="btn-ghost text-sm py-2 px-3">
-            <BookOpen className="w-4 h-4" />
-            용어 사전
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`btn-ghost text-sm py-2 px-3 ${showHistory ? 'bg-gray-100' : ''}`}
+            >
+              <History className="w-4 h-4" />
+              기록 ({records.length})
+            </button>
+            <Link href="/dictionary" className="btn-ghost text-sm py-2 px-3">
+              <BookOpen className="w-4 h-4" />
+              사전
+            </Link>
+          </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
+        {/* History Panel */}
+        {showHistory && (
+          <div className="card-elevated p-4 mb-6 animate-fade-in">
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <History className="w-4 h-4" />
+              최근 기록
+            </h3>
+            {records.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">기록이 없습니다.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {records.map((record) => (
+                  <button
+                    key={record.id}
+                    onClick={() => selectRecord(record)}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      selectedRecord?.id === record.id
+                        ? 'border-teal-500 bg-teal-50'
+                        : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-sm text-gray-800 truncate">
+                          {record.chart.split('\\n')[0]}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">{formatDate(record.created_at)}</span>
+                        </div>
+                      </div>
+                      {record.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {record.keywords.slice(0, 2).map((kw, i) => (
+                            <span key={i} className="px-1.5 py-0.5 bg-teal-100 text-teal-700 text-xs rounded">
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Processing Status */}
         {isProcessing && (
           <div className="card-elevated p-6 mb-6 animate-fade-in">

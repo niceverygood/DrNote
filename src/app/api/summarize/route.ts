@@ -1,22 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { openai, GPT_CONFIG } from '@/lib/openai'
-import { ORTHOPEDIC_SYSTEM_PROMPT, SUMMARY_USER_PROMPT, KEYWORDS_PROMPT } from '@/lib/openai'
+import { ORTHOPEDIC_SYSTEM_PROMPT, SUMMARY_USER_PROMPT } from '@/lib/openai'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-interface SoapNote {
-  subjective: string
-  objective: string
-  assessment: string
-  plan: string
+// Clinical Report 데이터 타입
+interface ClinicalData {
+  chiefComplaint: string
+  duration: string
+  onset: string
+  symptoms: {
+    text: string
+    severity: 'mild' | 'moderate' | 'severe'
+  }[]
+  history: {
+    type: 'trauma' | 'surgery' | 'disease' | 'medication'
+    text: string
+    date?: string
+  }[]
+  findings: {
+    name: string
+    result: 'positive' | 'negative' | 'normal' | 'abnormal'
+    value?: string
+  }[]
+  diagnosis: {
+    primary: string
+    differential?: string[]
+  }
+  plan: {
+    type: 'test' | 'medication' | 'procedure' | 'referral' | 'followup'
+    text: string
+    priority?: 'routine' | 'urgent' | 'stat'
+  }[]
+  keywords: string[]
 }
 
 interface SummaryResponse {
   success: boolean
-  soap: SoapNote
-  keywords: string[]
-  rawResponse: string
+  clinicalData: ClinicalData
+  transcript: string
 }
 
 export async function POST(request: NextRequest) {
@@ -37,43 +60,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // GPT-4o로 SOAP 요약 생성
+    // GPT-4o로 Clinical Report JSON 생성
     const summaryResponse = await openai.chat.completions.create({
       model: GPT_CONFIG.model,
       temperature: GPT_CONFIG.temperature,
       max_tokens: GPT_CONFIG.max_tokens,
+      response_format: { type: "json_object" },
       messages: [
         { role: 'system', content: ORTHOPEDIC_SYSTEM_PROMPT },
         { role: 'user', content: SUMMARY_USER_PROMPT(transcript) },
       ],
     })
 
-    const summaryText = summaryResponse.choices[0]?.message?.content || ''
+    const responseText = summaryResponse.choices[0]?.message?.content || '{}'
 
-    // SOAP 섹션 파싱
-    const soap = parseSoapNote(summaryText)
+    // JSON 파싱
+    let clinicalData: ClinicalData
+    try {
+      clinicalData = JSON.parse(responseText)
+    } catch {
+      // JSON 파싱 실패 시 기본 구조 반환
+      clinicalData = createDefaultClinicalData(responseText)
+    }
 
-    // 키워드 추출
-    const keywordsResponse = await openai.chat.completions.create({
-      model: GPT_CONFIG.model,
-      temperature: 0,
-      max_tokens: 500,
-      messages: [
-        { role: 'system', content: ORTHOPEDIC_SYSTEM_PROMPT },
-        { role: 'user', content: SUMMARY_USER_PROMPT(transcript) },
-        { role: 'assistant', content: summaryText },
-        { role: 'user', content: KEYWORDS_PROMPT },
-      ],
-    })
-
-    const keywordsText = keywordsResponse.choices[0]?.message?.content || '[]'
-    const keywords = parseKeywords(keywordsText)
+    // 데이터 검증 및 기본값 설정
+    clinicalData = validateAndFillDefaults(clinicalData)
 
     const response: SummaryResponse = {
       success: true,
-      soap,
-      keywords,
-      rawResponse: summaryText,
+      clinicalData,
+      transcript,
     }
 
     return NextResponse.json(response)
@@ -94,48 +110,35 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function parseSoapNote(text: string): SoapNote {
-  const sections: SoapNote = {
-    subjective: '',
-    objective: '',
-    assessment: '',
-    plan: '',
+function createDefaultClinicalData(rawText: string): ClinicalData {
+  return {
+    chiefComplaint: 'Unable to parse',
+    duration: 'N/A',
+    onset: 'N/A',
+    symptoms: [],
+    history: [],
+    findings: [],
+    diagnosis: {
+      primary: rawText.substring(0, 100) || 'Unable to determine',
+    },
+    plan: [],
+    keywords: [],
   }
-
-  // 각 섹션 추출
-  const subjectiveMatch = text.match(
-    /\[S\s*-?\s*Subjective\]\s*\n?([\s\S]*?)(?=\[O\s*-?\s*Objective\]|$)/i
-  )
-  const objectiveMatch = text.match(
-    /\[O\s*-?\s*Objective\]\s*\n?([\s\S]*?)(?=\[A\s*-?\s*Assessment\]|$)/i
-  )
-  const assessmentMatch = text.match(
-    /\[A\s*-?\s*Assessment\]\s*\n?([\s\S]*?)(?=\[P\s*-?\s*Plan\]|$)/i
-  )
-  const planMatch = text.match(/\[P\s*-?\s*Plan\]\s*\n?([\s\S]*?)$/i)
-
-  if (subjectiveMatch) sections.subjective = subjectiveMatch[1].trim()
-  if (objectiveMatch) sections.objective = objectiveMatch[1].trim()
-  if (assessmentMatch) sections.assessment = assessmentMatch[1].trim()
-  if (planMatch) sections.plan = planMatch[1].trim()
-
-  return sections
 }
 
-function parseKeywords(text: string): string[] {
-  try {
-    // JSON 배열 추출
-    const match = text.match(/\[[\s\S]*\]/)
-    if (match) {
-      return JSON.parse(match[0])
-    }
-  } catch {
-    // JSON 파싱 실패 시 쉼표로 분리
-    return text
-      .replace(/[\[\]"]/g, '')
-      .split(',')
-      .map((k) => k.trim())
-      .filter(Boolean)
+function validateAndFillDefaults(data: ClinicalData): ClinicalData {
+  return {
+    chiefComplaint: data.chiefComplaint || 'N/A',
+    duration: data.duration || 'N/A',
+    onset: data.onset || 'N/A',
+    symptoms: Array.isArray(data.symptoms) ? data.symptoms : [],
+    history: Array.isArray(data.history) ? data.history : [],
+    findings: Array.isArray(data.findings) ? data.findings : [],
+    diagnosis: {
+      primary: data.diagnosis?.primary || 'N/A',
+      differential: Array.isArray(data.diagnosis?.differential) ? data.diagnosis.differential : [],
+    },
+    plan: Array.isArray(data.plan) ? data.plan : [],
+    keywords: Array.isArray(data.keywords) ? data.keywords : [],
   }
-  return []
 }

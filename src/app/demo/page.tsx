@@ -237,10 +237,14 @@ export default function DemoPage() {
     toast.success('복사되었습니다')
   }
 
-  // 전체 복사
+  // 전체 복사 (원문 요약 + 차트 + 메모)
   const copyAll = () => {
     if (!state.chartData) return
-    const content = `[원문]\n${state.transcript}\n\n[차트]\n${state.chartData.chart}${state.chartData.note ? `\n\n[메모]\n${state.chartData.note}` : ''}\n\n[키워드]\n${state.chartData.keywords.join(', ')}`
+    // 원문은 100자 이내로 요약
+    const shortTranscript = state.transcript.length > 100
+      ? state.transcript.slice(0, 100) + '...'
+      : state.transcript
+    const content = `[원문]\n${shortTranscript}\n\n[차트]\n${state.chartData.chart}${state.chartData.note ? `\n\n[메모]\n${state.chartData.note}` : ''}`
     navigator.clipboard.writeText(content)
     toast.success('전체 복사되었습니다')
   }

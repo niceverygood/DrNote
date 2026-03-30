@@ -1,15 +1,16 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 import { Mic, Square, Pause, Play, RotateCcw, Upload, Sparkles } from 'lucide-react'
 
 interface AudioRecorderProps {
   onAudioReady: (blob: Blob) => void
   disabled?: boolean
+  autoSubmit?: boolean // 녹음 종료 시 자동으로 분석 시작
 }
 
-export function AudioRecorder({ onAudioReady, disabled }: AudioRecorderProps) {
+export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: AudioRecorderProps) {
   const {
     state,
     duration,
@@ -22,6 +23,16 @@ export function AudioRecorder({ onAudioReady, disabled }: AudioRecorderProps) {
     resetRecording,
     error,
   } = useAudioRecorder()
+
+  // 녹음 종료 시 자동으로 분석 시작
+  const prevStateRef = useRef(state)
+  useEffect(() => {
+    const wasRecordingOrPaused = prevStateRef.current === 'recording' || prevStateRef.current === 'paused'
+    if (autoSubmit && wasRecordingOrPaused && state === 'stopped' && audioBlob) {
+      onAudioReady(audioBlob)
+    }
+    prevStateRef.current = state
+  }, [state, audioBlob, autoSubmit, onAudioReady])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -102,7 +113,9 @@ export function AudioRecorder({ onAudioReady, disabled }: AudioRecorderProps) {
           <p className="text-sm font-medium text-amber-600">일시 정지됨</p>
         )}
         {state === 'stopped' && (
-          <p className="text-sm font-medium text-teal-600">녹음 완료 — AI 분석을 시작하세요</p>
+          <p className="text-sm font-medium text-teal-600">
+            {autoSubmit ? '녹음 완료 — AI 분석 시작 중...' : '녹음 완료 — AI 분석을 시작하세요'}
+          </p>
         )}
 
         {/* Error */}
@@ -181,20 +194,24 @@ export function AudioRecorder({ onAudioReady, disabled }: AudioRecorderProps) {
 
           {state === 'stopped' && audioUrl && (
             <>
-              <button
-                onClick={resetRecording}
-                className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-              >
-                <RotateCcw className="w-6 h-6 text-gray-700" />
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={disabled}
-                className="btn-primary px-8 py-4 text-base disabled:opacity-50"
-              >
-                <Sparkles className="w-5 h-5" />
-                AI 분석 시작
-              </button>
+              {!autoSubmit && (
+                <button
+                  onClick={resetRecording}
+                  className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                >
+                  <RotateCcw className="w-6 h-6 text-gray-700" />
+                </button>
+              )}
+              {!autoSubmit && (
+                <button
+                  onClick={handleSubmit}
+                  disabled={disabled}
+                  className="btn-primary px-8 py-4 text-base disabled:opacity-50"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  AI 분석 시작
+                </button>
+              )}
             </>
           )}
         </div>

@@ -8,15 +8,6 @@ const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null
 
-export interface ChartRecord {
-  id: string
-  transcript: string
-  chart: string
-  note: string | null
-  keywords: string[]
-  created_at: string
-}
-
 // GET: 기록 목록 조회
 export async function GET() {
   if (!supabase) {
@@ -50,7 +41,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { transcript, chart, note, keywords } = body
+    const {
+      transcript,
+      chart,
+      note,
+      keywords,
+      consultation_type,
+      chart_structured,
+      additional_info,
+      counselor_summary,
+    } = body
 
     if (!transcript || !chart) {
       return NextResponse.json(
@@ -66,6 +66,10 @@ export async function POST(request: NextRequest) {
         chart,
         note: note || null,
         keywords: keywords || [],
+        consultation_type: consultation_type || 'initial',
+        chart_structured: chart_structured || {},
+        additional_info: additional_info || {},
+        counselor_summary: counselor_summary || {},
       })
       .select()
       .single()

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { openai, GPT_CONFIG } from '@/lib/openai'
 import { DEFAULT_MEDICAL_TERMS, buildDictionaryPrompt } from '@/lib/medical-dictionary'
 import { buildSystemPrompt, SUMMARY_USER_PROMPT } from '@/lib/openai/prompts'
+import type { ChartResponse, ConsultationType } from '@/types/database'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -13,19 +14,6 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null
-
-// 응답 타입
-interface ChartResponse {
-  chart: string
-  note: string
-  keywords: string[]
-}
-
-interface SummaryResponse {
-  success: boolean
-  data: ChartResponse
-  transcript: string
-}
 
 // DB에서 의학 용어 사전 가져오기 (없으면 로컬 사전 사용)
 async function getMedicalDictionary(): Promise<string> {
@@ -55,7 +43,7 @@ async function getMedicalDictionary(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { transcript } = await request.json()
+    const { transcript, consultation_type = 'initial' } = await request.json()
 
     if (!transcript || typeof transcript !== 'string') {
       return NextResponse.json(
@@ -71,15 +59,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const validType: ConsultationType = consultation_type === 'follow_up' ? 'follow_up' : 'initial'
+
     // DB에서 의학 용어 사전 가져오기
     const dictionary = await getMedicalDictionary()
-    const systemPrompt = buildSystemPrompt(dictionary)
+    const systemPrompt = buildSystemPrompt(dictionary, validType)
 
     // GPT-4o로 차트 생성
     const summaryResponse = await openai.chat.completions.create({
       model: GPT_CONFIG.model,
       temperature: 0.3,
-      max_tokens: 1000,
+      max_tokens: 2000,
       response_format: { type: "json_object" },
       messages: [
         { role: 'system', content: systemPrompt },
@@ -92,29 +82,58 @@ export async function POST(request: NextRequest) {
     // JSON 파싱
     let chartData: ChartResponse
     try {
-      chartData = JSON.parse(responseText)
+      const parsed = JSON.parse(responseText)
+      chartData = {
+        chart: {
+          cc: parsed.chart?.cc || '',
+          pi: parsed.chart?.pi || '',
+          diagnosis: Array.isArray(parsed.chart?.diagnosis) ? parsed.chart.diagnosis : [],
+          plan: Array.isArray(parsed.chart?.plan) ? parsed.chart.plan : [],
+        },
+        note: parsed.note || '',
+        keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+        consultation_type: parsed.consultation_type === 'follow_up' ? 'follow_up' : 'initial',
+        counselor_summary: {
+          explanation: parsed.counselor_summary?.explanation || '',
+          treatment_reason: parsed.counselor_summary?.treatment_reason || '',
+          treatment_items: Array.isArray(parsed.counselor_summary?.treatment_items)
+            ? parsed.counselor_summary.treatment_items
+            : [],
+        },
+      }
     } catch {
       chartData = {
-        chart: responseText,
+        chart: { cc: responseText, pi: '', diagnosis: [], plan: [] },
         note: '',
         keywords: [],
+        consultation_type: validType,
+        counselor_summary: { explanation: '', treatment_reason: '', treatment_items: [] },
       }
     }
 
-    // 데이터 검증
-    chartData = {
-      chart: chartData.chart || 'Unable to parse',
-      note: chartData.note || '',
-      keywords: Array.isArray(chartData.keywords) ? chartData.keywords : [],
-    }
+    // 레거시 호환: chart를 문자열로도 생성
+    const chartText = [
+      chartData.chart.cc,
+      '',
+      chartData.chart.pi,
+      '',
+      ...chartData.chart.diagnosis,
+      'P>',
+      ...chartData.chart.plan.map(p => `- ${p}`),
+    ].join('\n')
 
-    const response: SummaryResponse = {
+    return NextResponse.json({
       success: true,
-      data: chartData,
+      data: {
+        chart: chartText,
+        chart_structured: chartData.chart,
+        note: chartData.note,
+        keywords: chartData.keywords,
+        consultation_type: chartData.consultation_type,
+        counselor_summary: chartData.counselor_summary,
+      },
       transcript,
-    }
-
-    return NextResponse.json(response)
+    })
   } catch (error) {
     console.error('Summarize Error:', error)
 

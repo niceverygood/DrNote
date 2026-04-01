@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { AudioRecorder } from '@/components/audio'
 import { Progress } from '@/components/ui/progress'
@@ -16,24 +16,36 @@ import {
   FileText,
   Search,
   Clock,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Globe,
+  GraduationCap,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import type { ConsultationType, ChartStructured, CounselorSummary, AdditionalInfo } from '@/types/database'
 
 type ProcessingStep = 'idle' | 'uploading' | 'transcribing' | 'summarizing' | 'done' | 'error'
 
 interface ChartData {
   chart: string
+  chart_structured: ChartStructured
   note: string
   keywords: string[]
+  consultation_type: ConsultationType
+  counselor_summary: CounselorSummary
 }
 
 interface ChartRecord {
   id: string
   transcript: string
   chart: string
+  chart_structured: ChartStructured | null
   note: string | null
   keywords: string[]
+  consultation_type: ConsultationType
+  counselor_summary: CounselorSummary | null
   created_at: string
 }
 
@@ -43,13 +55,6 @@ interface ProcessingState {
   transcript: string
   chartData: ChartData | null
   error: string
-}
-
-interface SectionMemo {
-  subjective: string
-  objective: string
-  diagnosis: string
-  plan: string
 }
 
 const initialState: ProcessingState = {
@@ -69,18 +74,56 @@ const stepMessages: Record<ProcessingStep, string> = {
   error: '오류 발생',
 }
 
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'zh', label: '中文' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'ja', label: '日本語' },
+]
+
+interface TranslationData {
+  translated_cc: string
+  translated_pi: string
+  translated_diagnosis: string
+  translated_plan: string
+  translated_note: string
+}
+
+interface PatientEducation {
+  title: string
+  description: string
+  causes: string
+  symptoms: string
+  treatment: string
+  precautions: string
+  recovery: string
+}
+
 export default function DemoPage() {
   const [state, setState] = useState<ProcessingState>(initialState)
   const [records, setRecords] = useState<ChartRecord[]>([])
   const [showHistory, setShowHistory] = useState(false)
   const [keywordSearch, setKeywordSearch] = useState('')
-  const [memos, setMemos] = useState<SectionMemo>({
-    subjective: '',
-    objective: '',
-    diagnosis: '',
-    plan: '',
-  })
   const [copiedSection, setCopiedSection] = useState<string | null>(null)
+  const [consultationType, setConsultationType] = useState<ConsultationType>('initial')
+
+  // 추가 정보
+  const [additionalInfo, setAdditionalInfo] = useState<AdditionalInfo>({
+    pmh: '',
+    surgical_history: '',
+    medication: '',
+    allergy: '',
+  })
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false)
+
+  // 번역
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null)
+  const [translation, setTranslation] = useState<TranslationData | null>(null)
+  const [translating, setTranslating] = useState(false)
+
+  // 환자 교육
+  const [patientEducation, setPatientEducation] = useState<PatientEducation | null>(null)
+  const [generatingEducation, setGeneratingEducation] = useState(false)
 
   // 기록 불러오기
   const fetchRecords = useCallback(async () => {
@@ -108,15 +151,19 @@ export default function DemoPage() {
         body: JSON.stringify({
           transcript,
           chart: chartData.chart,
+          chart_structured: chartData.chart_structured,
           note: chartData.note,
           keywords: chartData.keywords,
+          consultation_type: chartData.consultation_type,
+          counselor_summary: chartData.counselor_summary,
+          additional_info: additionalInfo,
         }),
       })
       fetchRecords()
     } catch (error) {
       console.error('Save record error:', error)
     }
-  }, [fetchRecords])
+  }, [fetchRecords, additionalInfo])
 
   const processAudio = useCallback(async (audioBlob: Blob) => {
     setState({ ...initialState, step: 'uploading', progress: 10 })
@@ -146,7 +193,7 @@ export default function DemoPage() {
       const summaryResponse = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript }),
+        body: JSON.stringify({ transcript, consultation_type: consultationType }),
       })
 
       if (!summaryResponse.ok) {
@@ -156,15 +203,24 @@ export default function DemoPage() {
 
       const result = await summaryResponse.json()
 
+      const chartData: ChartData = {
+        chart: result.data.chart,
+        chart_structured: result.data.chart_structured,
+        note: result.data.note,
+        keywords: result.data.keywords,
+        consultation_type: result.data.consultation_type,
+        counselor_summary: result.data.counselor_summary,
+      }
+
       setState({
         step: 'done',
         progress: 100,
         transcript,
-        chartData: result.data,
+        chartData,
         error: '',
       })
 
-      saveRecord(transcript, result.data)
+      saveRecord(transcript, chartData)
       toast.success('차트 생성 완료!')
     } catch (error) {
       console.error('Processing error:', error)
@@ -172,11 +228,15 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [saveRecord])
+  }, [saveRecord, consultationType])
 
   const resetState = useCallback(() => {
     setState(initialState)
-    setMemos({ subjective: '', objective: '', diagnosis: '', plan: '' })
+    setAdditionalInfo({ pmh: '', surgical_history: '', medication: '', allergy: '' })
+    setShowAdditionalInfo(false)
+    setTranslation(null)
+    setSelectedLanguage(null)
+    setPatientEducation(null)
   }, [])
 
   // 샘플 데모 실행
@@ -199,7 +259,7 @@ export default function DemoPage() {
       const response = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: sampleTranscript }),
+        body: JSON.stringify({ transcript: sampleTranscript, consultation_type: consultationType }),
       })
 
       if (!response.ok) {
@@ -209,15 +269,24 @@ export default function DemoPage() {
 
       const result = await response.json()
 
+      const chartData: ChartData = {
+        chart: result.data.chart,
+        chart_structured: result.data.chart_structured,
+        note: result.data.note,
+        keywords: result.data.keywords,
+        consultation_type: result.data.consultation_type,
+        counselor_summary: result.data.counselor_summary,
+      }
+
       setState({
         step: 'done',
         progress: 100,
         transcript: sampleTranscript,
-        chartData: result.data,
+        chartData,
         error: '',
       })
 
-      saveRecord(sampleTranscript, result.data)
+      saveRecord(sampleTranscript, chartData)
       toast.success('차트 생성 완료!')
     } catch (error) {
       console.error('Demo error:', error)
@@ -225,82 +294,119 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [saveRecord])
+  }, [saveRecord, consultationType])
+
+  // 번역 요청
+  const requestTranslation = useCallback(async (languageCode: string) => {
+    if (!state.chartData?.chart_structured) return
+
+    setTranslating(true)
+    setSelectedLanguage(languageCode)
+
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chart: state.chartData.chart_structured,
+          note: state.chartData.note,
+          language: LANGUAGES.find(l => l.code === languageCode)?.label || 'English',
+        }),
+      })
+
+      if (!response.ok) throw new Error('번역 실패')
+
+      const result = await response.json()
+      setTranslation(result.data)
+      toast.success('번역 완료!')
+    } catch {
+      toast.error('번역에 실패했습니다')
+      setSelectedLanguage(null)
+    } finally {
+      setTranslating(false)
+    }
+  }, [state.chartData])
+
+  // 환자 교육 자료 생성
+  const generatePatientEducation = useCallback(async () => {
+    if (!state.chartData?.chart_structured?.diagnosis?.length) return
+
+    setGeneratingEducation(true)
+
+    try {
+      const response = await fetch('/api/patient-education', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          diagnoses: state.chartData.chart_structured.diagnosis,
+        }),
+      })
+
+      if (!response.ok) throw new Error('생성 실패')
+
+      const result = await response.json()
+      setPatientEducation(result.data)
+      toast.success('환자 교육 자료 생성 완료!')
+    } catch {
+      toast.error('환자 교육 자료 생성에 실패했습니다')
+    } finally {
+      setGeneratingEducation(false)
+    }
+  }, [state.chartData])
 
   // 섹션 복사
   const copySection = (section: string, content: string) => {
-    const memo = memos[section as keyof SectionMemo]
-    const fullContent = memo ? `${content}\n\n[메모] ${memo}` : content
-    navigator.clipboard.writeText(fullContent)
+    navigator.clipboard.writeText(content)
     setCopiedSection(section)
     setTimeout(() => setCopiedSection(null), 2000)
     toast.success('복사되었습니다')
   }
 
-  // 전체 복사 (원문 요약 + 차트 + 메모)
+  // 전체 복사 (차트 + 추가정보 + 메모)
   const copyAll = () => {
     if (!state.chartData) return
-    // 원문은 100자 이내로 요약
-    const shortTranscript = state.transcript.length > 100
-      ? state.transcript.slice(0, 100) + '...'
-      : state.transcript
-    const content = `[원문]\n${shortTranscript}\n\n[차트]\n${state.chartData.chart}${state.chartData.note ? `\n\n[메모]\n${state.chartData.note}` : ''}`
+    const cs = state.chartData.chart_structured
+
+    let content = `[CC] ${cs.cc}\n[PI] ${cs.pi}\n`
+
+    if (cs.diagnosis.length) {
+      content += `\n[Diagnosis]\n${cs.diagnosis.join('\n')}\n`
+    }
+    if (cs.plan.length) {
+      content += `\n[Plan]\n${cs.plan.map(p => `- ${p}`).join('\n')}\n`
+    }
+    if (state.chartData.note) {
+      content += `\n[Note] ${state.chartData.note}\n`
+    }
+
+    // 추가 정보 포함
+    const ai = additionalInfo
+    if (ai.pmh || ai.surgical_history || ai.medication || ai.allergy) {
+      content += '\n[Additional Info]\n'
+      if (ai.pmh) content += `PMH: ${ai.pmh}\n`
+      if (ai.surgical_history) content += `Surgical Hx: ${ai.surgical_history}\n`
+      if (ai.medication) content += `Medication: ${ai.medication}\n`
+      if (ai.allergy) content += `Allergy: ${ai.allergy}\n`
+    }
+
     navigator.clipboard.writeText(content)
     toast.success('전체 복사되었습니다')
   }
 
   // 키워드 하이라이트
-  const highlightKeywords = (text: string, keywords: string[]) => {
-    if (!keywords.length || !keywordSearch) return text
+  const highlightKeywords = (text: string) => {
+    if (!keywordSearch) return text
 
-    const searchLower = keywordSearch.toLowerCase()
     const parts = text.split(new RegExp(`(${keywordSearch})`, 'gi'))
-
     return parts.map((part, i) =>
-      part.toLowerCase() === searchLower ? (
+      part.toLowerCase() === keywordSearch.toLowerCase() ? (
         <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
       ) : part
     )
   }
 
-  // 차트 파싱
-  const parseChart = (chart: string) => {
-    const lines = chart.split('\\n').join('\n').split('\n')
-    let subjective = ''
-    let objective = ''
-    let diagnosis = ''
-    let plan = ''
-
-    let currentSection = 'subjective'
-
-    lines.forEach(line => {
-      if (line.startsWith('r/o') || line.startsWith('R/O')) {
-        diagnosis += line + '\n'
-        currentSection = 'diagnosis'
-      } else if (line.startsWith('P>') || line.startsWith('P >')) {
-        currentSection = 'plan'
-        plan += line + '\n'
-      } else if (line.startsWith('- ')) {
-        if (currentSection === 'plan') {
-          plan += line + '\n'
-        }
-      } else if (line.trim()) {
-        if (currentSection === 'subjective' && !diagnosis && !plan) {
-          subjective += line + '\n'
-        }
-      }
-    })
-
-    return {
-      subjective: subjective.trim() || lines[0] || '',
-      objective: objective.trim(),
-      diagnosis: diagnosis.trim(),
-      plan: plan.trim(),
-    }
-  }
-
   const isProcessing = state.step !== 'idle' && state.step !== 'done' && state.step !== 'error'
-  const parsedChart = state.chartData ? parseChart(state.chartData.chart) : null
+  const cs = state.chartData?.chart_structured
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -314,6 +420,10 @@ export default function DemoPage() {
             <h1 className="text-lg font-semibold text-gray-900">Dr.Note</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">
+              <Users className="w-4 h-4" />
+              상담사
+            </Link>
             <button
               onClick={() => setShowHistory(!showHistory)}
               className={`btn-ghost text-sm py-2 px-3 ${showHistory ? 'bg-gray-100' : ''}`}
@@ -348,11 +458,38 @@ export default function DemoPage() {
         {/* Initial State - Recording */}
         {state.step === 'idle' && (
           <div className="flex flex-col items-center justify-center py-20">
+            {/* 초진/재진 선택 */}
+            <div className="mb-8 flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-600">진료 유형:</span>
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                <button
+                  onClick={() => setConsultationType('initial')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    consultationType === 'initial'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  초진 (Initial)
+                </button>
+                <button
+                  onClick={() => setConsultationType('follow_up')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    consultationType === 'follow_up'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  재진 (Follow-up)
+                </button>
+              </div>
+            </div>
+
             <AudioRecorder onAudioReady={processAudio} disabled={isProcessing} />
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-400 mb-3">또는 샘플 데이터로 테스트</p>
               <button onClick={runSampleDemo} className="btn-secondary text-sm">
-                🎯 샘플 데모 실행
+                샘플 데모 실행
               </button>
             </div>
           </div>
@@ -372,22 +509,25 @@ export default function DemoPage() {
         )}
 
         {/* Results - Two Column Layout */}
-        {state.step === 'done' && state.chartData && parsedChart && (
+        {state.step === 'done' && state.chartData && cs && (
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Left Column - Voice Script */}
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                     <Mic className="w-4 h-4 text-blue-600" />
                   </div>
                   <span className="font-semibold text-gray-900">Voice Script</span>
+                  <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                    state.chartData.consultation_type === 'follow_up'
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-teal-100 text-teal-700'
+                  }`}>
+                    {state.chartData.consultation_type === 'follow_up' ? '재진' : '초진'}
+                  </span>
                 </div>
-                <button
-                  onClick={resetState}
-                  className="btn-primary text-sm py-2 px-4"
-                >
+                <button onClick={resetState} className="btn-primary text-sm py-2 px-4">
                   <RefreshCw className="w-4 h-4" />
                   새 진료 시작
                 </button>
@@ -410,10 +550,7 @@ export default function DemoPage() {
               {/* Transcript */}
               <div className="p-5 max-h-[600px] overflow-y-auto">
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {keywordSearch
-                    ? highlightKeywords(state.transcript, state.chartData.keywords)
-                    : state.transcript
-                  }
+                  {keywordSearch ? highlightKeywords(state.transcript) : state.transcript}
                 </p>
               </div>
 
@@ -441,71 +578,199 @@ export default function DemoPage() {
             </div>
 
             {/* Right Column - AI Summary */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-purple-600" />
+            <div className="space-y-4">
+              {/* Main Chart */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <span className="font-semibold text-gray-900">AI Chart</span>
                   </div>
-                  <span className="font-semibold text-gray-900">AI Summary</span>
+                  <button
+                    onClick={copyAll}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                    전체 복사
+                  </button>
                 </div>
+
+                <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+                  {/* CC */}
+                  <ChartSection
+                    title="Chief Complaint"
+                    badge="CC"
+                    badgeColor="bg-blue-100 text-blue-700"
+                    content={cs.cc}
+                    onCopy={() => copySection('cc', cs.cc)}
+                    copied={copiedSection === 'cc'}
+                  />
+
+                  {/* PI */}
+                  <ChartSection
+                    title="Present Illness"
+                    badge="PI"
+                    badgeColor="bg-green-100 text-green-700"
+                    content={cs.pi}
+                    onCopy={() => copySection('pi', cs.pi)}
+                    copied={copiedSection === 'pi'}
+                    translation={translation?.translated_pi}
+                  />
+
+                  {/* Diagnosis */}
+                  <ChartSection
+                    title="Diagnosis"
+                    badge="Dx"
+                    badgeColor="bg-amber-100 text-amber-700"
+                    content={cs.diagnosis.join('\n')}
+                    onCopy={() => copySection('dx', cs.diagnosis.join('\n'))}
+                    copied={copiedSection === 'dx'}
+                    highlight
+                    translation={translation?.translated_diagnosis}
+                  >
+                    {/* 환자 교육 버튼 */}
+                    <button
+                      onClick={generatePatientEducation}
+                      disabled={generatingEducation}
+                      className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+                    >
+                      {generatingEducation ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <GraduationCap className="w-3.5 h-3.5" />
+                      )}
+                      환자 설명 생성
+                    </button>
+                  </ChartSection>
+
+                  {/* Plan */}
+                  <ChartSection
+                    title="Plan"
+                    badge="P"
+                    badgeColor="bg-purple-100 text-purple-700"
+                    content={cs.plan.map(p => `- ${p}`).join('\n')}
+                    onCopy={() => copySection('plan', cs.plan.map(p => `- ${p}`).join('\n'))}
+                    copied={copiedSection === 'plan'}
+                    translation={translation?.translated_plan}
+                  />
+
+                  {/* Note */}
+                  {state.chartData.note && (
+                    <ChartSection
+                      title="Note"
+                      badge="N"
+                      badgeColor="bg-gray-200 text-gray-600"
+                      content={state.chartData.note}
+                      onCopy={() => copySection('note', state.chartData?.note || '')}
+                      copied={copiedSection === 'note'}
+                    />
+                  )}
+                </div>
+
+                {/* Translation Controls */}
+                <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Globe className="w-4 h-4 text-gray-500" />
+                    <span className="text-xs text-gray-500">번역:</span>
+                    {LANGUAGES.map(lang => (
+                      <button
+                        key={lang.code}
+                        onClick={() => requestTranslation(lang.code)}
+                        disabled={translating}
+                        className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                          selectedLanguage === lang.code
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-blue-50'
+                        } disabled:opacity-50`}
+                      >
+                        {lang.label}
+                      </button>
+                    ))}
+                    {translating && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />}
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Info - Collapsible */}
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <button
-                  onClick={copyAll}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                  onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
                 >
-                  <Copy className="w-4 h-4" />
-                  전체 복사
+                  <span className="font-medium text-gray-900">추가 정보 (PMH / 수술력 / 약물 / 알러지)</span>
+                  {showAdditionalInfo ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
                 </button>
+
+                {showAdditionalInfo && (
+                  <div className="px-5 pb-5 space-y-3">
+                    <AdditionalField
+                      label="Past Medical History (PMH)"
+                      placeholder="고혈압, 당뇨 등 기저질환"
+                      value={additionalInfo.pmh}
+                      onChange={(v) => setAdditionalInfo(a => ({ ...a, pmh: v }))}
+                    />
+                    <AdditionalField
+                      label="Surgical History (수술력)"
+                      placeholder="이전 수술 이력"
+                      value={additionalInfo.surgical_history}
+                      onChange={(v) => setAdditionalInfo(a => ({ ...a, surgical_history: v }))}
+                    />
+                    <AdditionalField
+                      label="Medication (현재 복용약)"
+                      placeholder="현재 복용 중인 약물"
+                      value={additionalInfo.medication}
+                      onChange={(v) => setAdditionalInfo(a => ({ ...a, medication: v }))}
+                    />
+                    <AdditionalField
+                      label="Allergy (알러지)"
+                      placeholder="약물/음식 알러지"
+                      value={additionalInfo.allergy}
+                      onChange={(v) => setAdditionalInfo(a => ({ ...a, allergy: v }))}
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Sections */}
-              <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-                {/* 주관적 소견 */}
-                <SummarySection
-                  title="주관적 소견"
-                  icon="S"
-                  content={parsedChart.subjective}
-                  memo={memos.subjective}
-                  onMemoChange={(v) => setMemos(m => ({ ...m, subjective: v }))}
-                  onCopy={() => copySection('subjective', parsedChart.subjective)}
-                  copied={copiedSection === 'subjective'}
-                />
-
-                {/* 객관적 소견 */}
-                <SummarySection
-                  title="객관적 소견"
-                  icon="O"
-                  content={state.chartData.note || '특이 소견 없음'}
-                  memo={memos.objective}
-                  onMemoChange={(v) => setMemos(m => ({ ...m, objective: v }))}
-                  onCopy={() => copySection('objective', state.chartData?.note || '')}
-                  copied={copiedSection === 'objective'}
-                />
-
-                {/* 진단명 */}
-                <SummarySection
-                  title="진단명"
-                  icon="A"
-                  content={parsedChart.diagnosis || 'r/o 진단 대기'}
-                  memo={memos.diagnosis}
-                  onMemoChange={(v) => setMemos(m => ({ ...m, diagnosis: v }))}
-                  onCopy={() => copySection('diagnosis', parsedChart.diagnosis)}
-                  copied={copiedSection === 'diagnosis'}
-                  highlight
-                />
-
-                {/* 진료 계획 */}
-                <SummarySection
-                  title="진료 계획"
-                  icon="P"
-                  content={parsedChart.plan || 'P> 계획 없음'}
-                  memo={memos.plan}
-                  onMemoChange={(v) => setMemos(m => ({ ...m, plan: v }))}
-                  onCopy={() => copySection('plan', parsedChart.plan)}
-                  copied={copiedSection === 'plan'}
-                />
-              </div>
+              {/* Patient Education */}
+              {patientEducation && (
+                <div className="bg-white rounded-2xl border border-amber-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-amber-100 bg-amber-50">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5 text-amber-600" />
+                      <span className="font-semibold text-amber-900">환자 교육 자료</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const edu = patientEducation
+                        const text = `[${edu.title}]\n\n${edu.description}\n\n원인: ${edu.causes}\n증상: ${edu.symptoms}\n치료: ${edu.treatment}\n주의사항: ${edu.precautions}\n회복: ${edu.recovery}`
+                        navigator.clipboard.writeText(text)
+                        toast.success('환자 교육 자료 복사됨')
+                      }}
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-amber-700 hover:bg-amber-100 rounded transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      복사
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-3 text-sm text-gray-700">
+                    <h4 className="font-bold text-gray-900">{patientEducation.title}</h4>
+                    <p>{patientEducation.description}</p>
+                    <div className="grid gap-2">
+                      <EducationItem label="원인" content={patientEducation.causes} />
+                      <EducationItem label="증상" content={patientEducation.symptoms} />
+                      <EducationItem label="치료" content={patientEducation.treatment} />
+                      <EducationItem label="주의사항" content={patientEducation.precautions} />
+                      <EducationItem label="회복" content={patientEducation.recovery} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -529,8 +794,11 @@ export default function DemoPage() {
                         transcript: record.transcript,
                         chartData: {
                           chart: record.chart,
+                          chart_structured: record.chart_structured || { cc: '', pi: '', diagnosis: [], plan: [] },
                           note: record.note || '',
                           keywords: record.keywords,
+                          consultation_type: record.consultation_type || 'initial',
+                          counselor_summary: record.counselor_summary || { explanation: '', treatment_reason: '', treatment_items: [] },
                         },
                         error: '',
                       })
@@ -538,8 +806,17 @@ export default function DemoPage() {
                     }}
                     className="text-left p-3 rounded-lg border border-gray-100 hover:border-teal-200 hover:bg-teal-50 transition-colors"
                   >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${
+                        record.consultation_type === 'follow_up'
+                          ? 'bg-orange-100 text-orange-600'
+                          : 'bg-teal-100 text-teal-600'
+                      }`}>
+                        {record.consultation_type === 'follow_up' ? '재진' : '초진'}
+                      </span>
+                    </div>
                     <p className="font-mono text-sm text-gray-800 truncate">
-                      {record.chart.split('\\n')[0]}
+                      {record.chart_structured?.cc || record.chart.split('\n')[0]}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Clock className="w-3 h-3 text-gray-400" />
@@ -560,7 +837,7 @@ export default function DemoPage() {
         )}
       </main>
 
-      {/* Bottom Recording Bar (when viewing results) */}
+      {/* Bottom Recording Bar */}
       {state.step === 'done' && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
           <button
@@ -570,9 +847,7 @@ export default function DemoPage() {
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <Mic className="w-4 h-4" />
             </div>
-            <span className="font-medium">녹음 전</span>
-            <span className="text-slate-400">|</span>
-            <span className="font-mono">00:00</span>
+            <span className="font-medium">새 녹음</span>
           </button>
         </div>
       )}
@@ -580,34 +855,34 @@ export default function DemoPage() {
   )
 }
 
-// Summary Section Component
-function SummarySection({
+// Chart Section Component
+function ChartSection({
   title,
-  icon,
+  badge,
+  badgeColor,
   content,
-  memo,
-  onMemoChange,
   onCopy,
   copied,
   highlight,
+  translation,
+  children,
 }: {
   title: string
-  icon: string
+  badge: string
+  badgeColor: string
   content: string
-  memo: string
-  onMemoChange: (value: string) => void
   onCopy: () => void
   copied: boolean
   highlight?: boolean
+  translation?: string
+  children?: React.ReactNode
 }) {
   return (
     <div className="p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className={`w-6 h-6 rounded text-xs font-bold flex items-center justify-center ${
-            highlight ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-          }`}>
-            {icon}
+          <span className={`px-2 py-0.5 rounded text-xs font-bold ${badgeColor}`}>
+            {badge}
           </span>
           <span className="font-medium text-gray-900">{title}</span>
         </div>
@@ -620,17 +895,54 @@ function SummarySection({
         </button>
       </div>
 
-      <div className={`p-3 rounded-lg mb-3 ${highlight ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'}`}>
+      <div className={`p-3 rounded-lg ${highlight ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50'}`}>
         <p className="text-sm text-gray-700 whitespace-pre-wrap">{content}</p>
       </div>
 
-      <input
-        type="text"
-        placeholder="메모 입력"
-        value={memo}
-        onChange={(e) => onMemoChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+      {translation && (
+        <div className="mt-2 p-3 rounded-lg bg-blue-50 border border-blue-100">
+          <p className="text-xs text-blue-500 font-medium mb-1">Translation</p>
+          <p className="text-sm text-blue-800 whitespace-pre-wrap">{translation}</p>
+        </div>
+      )}
+
+      {children}
+    </div>
+  )
+}
+
+// Additional Info Field
+function AdditionalField({
+  label,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string
+  placeholder: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-gray-600 mb-1 block">{label}</label>
+      <textarea
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={2}
+        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
       />
+    </div>
+  )
+}
+
+// Education Item
+function EducationItem({ label, content }: { label: string; content: string }) {
+  return (
+    <div className="p-2.5 bg-amber-50 rounded-lg">
+      <span className="text-xs font-semibold text-amber-700">{label}</span>
+      <p className="text-sm text-gray-700 mt-0.5">{content}</p>
     </div>
   )
 }

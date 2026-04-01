@@ -154,3 +154,52 @@ export type Transcript = Database['public']['Tables']['transcripts']['Row']
 export type Summary = Database['public']['Tables']['summaries']['Row']
 
 export type ConsultationStatus = Database['public']['Tables']['consultations']['Row']['status']
+
+// 초진/재진 타입
+export type ConsultationType = 'initial' | 'follow_up'
+
+// 구조화된 차트 (CC/PI/Dx/Plan)
+export interface ChartStructured {
+  cc: string
+  pi: string
+  diagnosis: string[]
+  plan: string[]
+}
+
+// 추가 정보 (PMH, 수술력, 약물, 알러지)
+export interface AdditionalInfo {
+  pmh: string
+  surgical_history: string
+  medication: string
+  allergy: string
+}
+
+// 상담사용 요약
+export interface CounselorSummary {
+  explanation: string
+  treatment_reason: string
+  treatment_items: string[]
+}
+
+// AI 응답 전체 구조
+export interface ChartResponse {
+  chart: ChartStructured
+  note: string
+  keywords: string[]
+  consultation_type: ConsultationType
+  counselor_summary: CounselorSummary
+}
+
+// 확장된 차트 기록
+export interface ExtendedChartRecord {
+  id: string
+  transcript: string
+  chart: string
+  chart_structured: ChartStructured | null
+  note: string | null
+  keywords: string[]
+  consultation_type: ConsultationType
+  additional_info: AdditionalInfo | null
+  counselor_summary: CounselorSummary | null
+  created_at: string
+}

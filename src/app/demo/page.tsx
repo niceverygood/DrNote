@@ -22,6 +22,7 @@ import {
   Globe,
   GraduationCap,
   Users,
+  Scan,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ConsultationType, ChartStructured, CounselorSummary, AdditionalInfo } from '@/types/database'
@@ -420,6 +421,10 @@ export default function DemoPage() {
             <h1 className="text-lg font-semibold text-gray-900">Dr.Note</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/imaging" className="btn-ghost text-sm py-2 px-3">
+              <Scan className="w-4 h-4" />
+              영상분석
+            </Link>
             <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">
               <Users className="w-4 h-4" />
               상담사

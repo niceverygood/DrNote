@@ -425,6 +425,9 @@ export default function DemoPage() {
               <Scan className="w-4 h-4" />
               영상분석
             </Link>
+            <Link href="/pacs" className="btn-ghost text-sm py-2 px-3">
+              PACS
+            </Link>
             <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">
               <Users className="w-4 h-4" />
               상담사

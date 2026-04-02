@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -78,6 +78,23 @@ export default function ImagingPage() {
   const [copiedSection, setCopiedSection] = useState<string | null>(null)
   const [showMeasurements, setShowMeasurements] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // PACS에서 캡처된 이미지 수신
+  useEffect(() => {
+    const pacsCapture = sessionStorage.getItem('pacs_capture')
+    if (pacsCapture) {
+      setImagePreview(pacsCapture)
+      // base64를 File로 변환
+      fetch(pacsCapture)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'pacs_capture.png', { type: 'image/png' })
+          setImageFile(file)
+        })
+      sessionStorage.removeItem('pacs_capture')
+      sessionStorage.removeItem('pacs_metadata')
+    }
+  }, [])
 
   const handleFileSelect = useCallback((file: File) => {
     setImageFile(file)
@@ -161,11 +178,17 @@ export default function ImagingPage() {
               <h1 className="text-lg font-semibold text-gray-900">AI 영상 분석</h1>
             </div>
           </div>
-          {result && (
-            <button onClick={resetAll} className="btn-ghost text-sm py-2 px-3">
-              새 영상 분석
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <Link href="/pacs" className="btn-ghost text-sm py-2 px-3 flex items-center gap-1">
+              <ImageIcon className="w-4 h-4" />
+              PACS 뷰어
+            </Link>
+            {result && (
+              <button onClick={resetAll} className="btn-ghost text-sm py-2 px-3">
+                새 영상 분석
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

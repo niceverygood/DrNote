@@ -135,12 +135,85 @@ export const SUMMARY_USER_PROMPT = (transcript: string) => `
 ${transcript}
 `
 
+// 차트 포맷 설정에 따른 동적 프롬프트 생성
+interface ChartFieldConfig {
+  key: string
+  label: string
+  badge: string
+  enabled: boolean
+  promptHint: string
+  isCustom?: boolean
+  type: 'text' | 'list'
+}
+
+interface ChartFormatConfig {
+  fields: ChartFieldConfig[]
+  globalPrompt: string
+}
+
+function buildFormatOverride(chartFormat?: ChartFormatConfig): string {
+  if (!chartFormat) return ''
+
+  const enabledFields = chartFormat.fields.filter(f => f.enabled)
+  if (enabledFields.length === 0) return ''
+
+  let override = '\n\n## 사용자 지정 차트 포맷\n아래 필드만 출력하고, 비활성화된 필드는 빈 값으로 처리해:\n'
+
+  // 기본 필드 매핑
+  const defaultKeys = ['cc', 'pi', 'dx', 'plan', 'note']
+  const keyMapping: Record<string, string> = {
+    cc: 'chart.cc',
+    pi: 'chart.pi',
+    dx: 'chart.diagnosis',
+    plan: 'chart.plan',
+    note: 'note',
+  }
+
+  enabledFields.forEach(field => {
+    const jsonPath = keyMapping[field.key] || `chart.${field.key}`
+    const typeDesc = field.type === 'list' ? '(배열)' : '(문자열)'
+    let desc = `- ${jsonPath} ${typeDesc}: ${field.label}`
+    if (field.promptHint) {
+      desc += ` → ${field.promptHint}`
+    }
+    override += desc + '\n'
+  })
+
+  // 비활성화된 기본 필드 처리
+  const disabledDefaults = defaultKeys.filter(k => !enabledFields.some(f => f.key === k))
+  if (disabledDefaults.length > 0) {
+    override += `\n비활성화된 필드 (빈 값으로 출력): ${disabledDefaults.map(k => keyMapping[k] || k).join(', ')}\n`
+  }
+
+  // 커스텀 필드가 있으면 chart 객체에 추가하도록 지시
+  const customFields = enabledFields.filter(f => f.isCustom)
+  if (customFields.length > 0) {
+    override += '\n커스텀 필드를 chart 객체에 추가해서 출력해:\n'
+    customFields.forEach(f => {
+      const typeDesc = f.type === 'list' ? '배열' : '문자열'
+      override += `- chart.${f.key}: ${f.label} (${typeDesc})${f.promptHint ? ` → ${f.promptHint}` : ''}\n`
+    })
+  }
+
+  if (chartFormat.globalPrompt) {
+    override += `\n## 추가 지시사항\n${chartFormat.globalPrompt}\n`
+  }
+
+  return override
+}
+
 // 사전을 프롬프트에 주입
-export function buildSystemPrompt(dictionary: string, consultationType: 'initial' | 'follow_up' = 'initial'): string {
+export function buildSystemPrompt(
+  dictionary: string,
+  consultationType: 'initial' | 'follow_up' = 'initial',
+  chartFormat?: ChartFormatConfig
+): string {
   const typeGuide = consultationType === 'follow_up' ? FOLLOW_UP_GUIDE : INITIAL_VISIT_GUIDE
+  const formatOverride = buildFormatOverride(chartFormat)
   return ORTHOPEDIC_SYSTEM_PROMPT
     .replace('{{DICTIONARY}}', dictionary)
     .replace('{{CONSULTATION_TYPE}}', typeGuide)
+    + formatOverride
 }
 
 // 번역 프롬프트

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { AudioRecorder } from '@/components/audio'
 import { Progress } from '@/components/ui/progress'
+import { ChartFormatSettings, loadChartFormat } from '@/components/ChartFormatSettings'
 import {
   ArrowLeft,
   RotateCcw,
@@ -25,7 +26,7 @@ import {
   Scan,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { ConsultationType, ChartStructured, CounselorSummary, AdditionalInfo } from '@/types/database'
+import type { ConsultationType, ChartStructured, CounselorSummary, AdditionalInfo, ChartFormatConfig } from '@/types/database'
 
 type ProcessingStep = 'idle' | 'uploading' | 'transcribing' | 'summarizing' | 'done' | 'error'
 
@@ -126,6 +127,9 @@ export default function DemoPage() {
   const [patientEducation, setPatientEducation] = useState<PatientEducation | null>(null)
   const [generatingEducation, setGeneratingEducation] = useState(false)
 
+  // 차트 포맷 설정
+  const [chartFormat, setChartFormat] = useState<ChartFormatConfig>(() => loadChartFormat())
+
   // 기록 불러오기
   const fetchRecords = useCallback(async () => {
     try {
@@ -194,7 +198,11 @@ export default function DemoPage() {
       const summaryResponse = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, consultation_type: consultationType }),
+        body: JSON.stringify({
+          transcript,
+          consultation_type: consultationType,
+          chart_format: chartFormat,
+        }),
       })
 
       if (!summaryResponse.ok) {
@@ -229,7 +237,7 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [saveRecord, consultationType])
+  }, [saveRecord, consultationType, chartFormat])
 
   const resetState = useCallback(() => {
     setState(initialState)
@@ -260,7 +268,11 @@ export default function DemoPage() {
       const response = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: sampleTranscript, consultation_type: consultationType }),
+        body: JSON.stringify({
+          transcript: sampleTranscript,
+          consultation_type: consultationType,
+          chart_format: chartFormat,
+        }),
       })
 
       if (!response.ok) {
@@ -295,7 +307,7 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [saveRecord, consultationType])
+  }, [saveRecord, consultationType, chartFormat])
 
   // 번역 요청
   const requestTranslation = useCallback(async (languageCode: string) => {
@@ -363,34 +375,32 @@ export default function DemoPage() {
     toast.success('복사되었습니다')
   }
 
-  // 전체 복사 (차트 + 추가정보 + 메모)
+  // 전체 복사 (활성화된 필드만 + 추가정보)
   const copyAll = () => {
     if (!state.chartData) return
-    const cs = state.chartData.chart_structured
+    const chartStructured = state.chartData.chart_structured
 
-    let content = `[CC] ${cs.cc}\n[PI] ${cs.pi}\n`
-
-    if (cs.diagnosis.length) {
-      content += `\n[Diagnosis]\n${cs.diagnosis.join('\n')}\n`
-    }
-    if (cs.plan.length) {
-      content += `\n[Plan]\n${cs.plan.map(p => `- ${p}`).join('\n')}\n`
-    }
-    if (state.chartData.note) {
-      content += `\n[Note] ${state.chartData.note}\n`
-    }
+    let content = ''
+    chartFormat.fields
+      .filter(f => f.enabled)
+      .forEach(field => {
+        const fieldContent = getFieldContent(field.key, chartStructured, state.chartData!)
+        if (fieldContent) {
+          content += `[${field.badge}] ${fieldContent}\n\n`
+        }
+      })
 
     // 추가 정보 포함
     const ai = additionalInfo
     if (ai.pmh || ai.surgical_history || ai.medication || ai.allergy) {
-      content += '\n[Additional Info]\n'
+      content += '[Additional Info]\n'
       if (ai.pmh) content += `PMH: ${ai.pmh}\n`
       if (ai.surgical_history) content += `Surgical Hx: ${ai.surgical_history}\n`
       if (ai.medication) content += `Medication: ${ai.medication}\n`
       if (ai.allergy) content += `Allergy: ${ai.allergy}\n`
     }
 
-    navigator.clipboard.writeText(content)
+    navigator.clipboard.writeText(content.trim())
     toast.success('전체 복사되었습니다')
   }
 
@@ -404,6 +414,24 @@ export default function DemoPage() {
         <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
       ) : part
     )
+  }
+
+  // 필드 키에 따른 콘텐츠 추출
+  const getFieldContent = (key: string, chartStructured: ChartStructured, chartData: ChartData): string => {
+    switch (key) {
+      case 'cc': return chartStructured.cc
+      case 'pi': return chartStructured.pi
+      case 'dx': return chartStructured.diagnosis.join('\n')
+      case 'plan': return chartStructured.plan.map(p => `- ${p}`).join('\n')
+      case 'note': return chartData.note || ''
+      default: {
+        // 커스텀 필드: chart_structured에 동적으로 추가된 필드에서 가져오기
+        const custom = (chartStructured as unknown as Record<string, unknown>)[key]
+        if (Array.isArray(custom)) return custom.join('\n')
+        if (typeof custom === 'string') return custom
+        return ''
+      }
+    }
   }
 
   const isProcessing = state.step !== 'idle' && state.step !== 'done' && state.step !== 'error'
@@ -596,85 +624,65 @@ export default function DemoPage() {
                     </div>
                     <span className="font-semibold text-gray-900">AI Chart</span>
                   </div>
-                  <button
-                    onClick={copyAll}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                  >
-                    <Copy className="w-4 h-4" />
-                    전체 복사
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <ChartFormatSettings
+                      currentConfig={chartFormat}
+                      onConfigChange={setChartFormat}
+                    />
+                    <button
+                      onClick={copyAll}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                      전체 복사
+                    </button>
+                  </div>
                 </div>
 
                 <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
-                  {/* CC */}
-                  <ChartSection
-                    title="Chief Complaint"
-                    badge="CC"
-                    badgeColor="bg-blue-100 text-blue-700"
-                    content={cs.cc}
-                    onCopy={() => copySection('cc', cs.cc)}
-                    copied={copiedSection === 'cc'}
-                  />
+                  {chartFormat.fields
+                    .filter(f => f.enabled)
+                    .map((field) => {
+                      const content = getFieldContent(field.key, cs, state.chartData!)
+                      if (!content) return null
 
-                  {/* PI */}
-                  <ChartSection
-                    title="Present Illness"
-                    badge="PI"
-                    badgeColor="bg-green-100 text-green-700"
-                    content={cs.pi}
-                    onCopy={() => copySection('pi', cs.pi)}
-                    copied={copiedSection === 'pi'}
-                    translation={translation?.translated_pi}
-                  />
+                      const translationMap: Record<string, string | undefined> = {
+                        cc: translation?.translated_cc,
+                        pi: translation?.translated_pi,
+                        dx: translation?.translated_diagnosis,
+                        plan: translation?.translated_plan,
+                        note: translation?.translated_note,
+                      }
 
-                  {/* Diagnosis */}
-                  <ChartSection
-                    title="Diagnosis"
-                    badge="Dx"
-                    badgeColor="bg-amber-100 text-amber-700"
-                    content={cs.diagnosis.join('\n')}
-                    onCopy={() => copySection('dx', cs.diagnosis.join('\n'))}
-                    copied={copiedSection === 'dx'}
-                    highlight
-                    translation={translation?.translated_diagnosis}
-                  >
-                    {/* 환자 교육 버튼 */}
-                    <button
-                      onClick={generatePatientEducation}
-                      disabled={generatingEducation}
-                      className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
-                    >
-                      {generatingEducation ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <GraduationCap className="w-3.5 h-3.5" />
-                      )}
-                      환자 설명 생성
-                    </button>
-                  </ChartSection>
-
-                  {/* Plan */}
-                  <ChartSection
-                    title="Plan"
-                    badge="P"
-                    badgeColor="bg-purple-100 text-purple-700"
-                    content={cs.plan.map(p => `- ${p}`).join('\n')}
-                    onCopy={() => copySection('plan', cs.plan.map(p => `- ${p}`).join('\n'))}
-                    copied={copiedSection === 'plan'}
-                    translation={translation?.translated_plan}
-                  />
-
-                  {/* Note */}
-                  {state.chartData.note && (
-                    <ChartSection
-                      title="Note"
-                      badge="N"
-                      badgeColor="bg-gray-200 text-gray-600"
-                      content={state.chartData.note}
-                      onCopy={() => copySection('note', state.chartData?.note || '')}
-                      copied={copiedSection === 'note'}
-                    />
-                  )}
+                      return (
+                        <ChartSection
+                          key={field.key}
+                          title={field.label}
+                          badge={field.badge}
+                          badgeColor={field.badgeColor}
+                          content={content}
+                          onCopy={() => copySection(field.key, content)}
+                          copied={copiedSection === field.key}
+                          highlight={field.key === 'dx'}
+                          translation={translationMap[field.key]}
+                        >
+                          {field.key === 'dx' && (
+                            <button
+                              onClick={generatePatientEducation}
+                              disabled={generatingEducation}
+                              className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+                            >
+                              {generatingEducation ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <GraduationCap className="w-3.5 h-3.5" />
+                              )}
+                              환자 설명 생성
+                            </button>
+                          )}
+                        </ChartSection>
+                      )
+                    })}
                 </div>
 
                 {/* Translation Controls */}

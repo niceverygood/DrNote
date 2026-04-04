@@ -190,6 +190,36 @@ export interface ChartResponse {
   counselor_summary: CounselorSummary
 }
 
+// 차트 포맷 설정 - 각 필드별 설정
+export interface ChartFieldConfig {
+  key: string           // 고유 키 (cc, pi, dx, plan, note 또는 커스텀)
+  label: string         // 표시 라벨 (예: "Chief Complaint")
+  badge: string         // 뱃지 텍스트 (예: "CC")
+  badgeColor: string    // 뱃지 색상 클래스
+  enabled: boolean      // 표시 여부
+  promptHint: string    // AI에게 전달할 커스텀 지시사항 (예: "영문 약어 위주로 작성")
+  isCustom?: boolean    // 사용자가 추가한 커스텀 필드 여부
+  type: 'text' | 'list' // 텍스트 or 배열 타입
+}
+
+// 전체 차트 포맷 설정
+export interface ChartFormatConfig {
+  fields: ChartFieldConfig[]
+  globalPrompt: string  // 전체 차트에 대한 추가 지시사항
+}
+
+// 기본 차트 포맷 설정
+export const DEFAULT_CHART_FORMAT: ChartFormatConfig = {
+  fields: [
+    { key: 'cc', label: 'Chief Complaint', badge: 'CC', badgeColor: 'bg-blue-100 text-blue-700', enabled: true, promptHint: '', type: 'text' },
+    { key: 'pi', label: 'Present Illness', badge: 'PI', badgeColor: 'bg-green-100 text-green-700', enabled: true, promptHint: '', type: 'text' },
+    { key: 'dx', label: 'Diagnosis', badge: 'Dx', badgeColor: 'bg-amber-100 text-amber-700', enabled: true, promptHint: '', type: 'list' },
+    { key: 'plan', label: 'Plan', badge: 'P', badgeColor: 'bg-purple-100 text-purple-700', enabled: true, promptHint: '', type: 'list' },
+    { key: 'note', label: 'Note', badge: 'N', badgeColor: 'bg-gray-200 text-gray-600', enabled: true, promptHint: '', type: 'text' },
+  ],
+  globalPrompt: '',
+}
+
 // 확장된 차트 기록
 export interface ExtendedChartRecord {
   id: string

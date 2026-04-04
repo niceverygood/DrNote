@@ -43,7 +43,7 @@ async function getMedicalDictionary(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { transcript, consultation_type = 'initial' } = await request.json()
+    const { transcript, consultation_type = 'initial', chart_format } = await request.json()
 
     if (!transcript || typeof transcript !== 'string') {
       return NextResponse.json(
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // DB에서 의학 용어 사전 가져오기
     const dictionary = await getMedicalDictionary()
-    const systemPrompt = buildSystemPrompt(dictionary, validType)
+    const systemPrompt = buildSystemPrompt(dictionary, validType, chart_format || undefined)
 
     // GPT-4o로 차트 생성
     const summaryResponse = await openai.chat.completions.create({

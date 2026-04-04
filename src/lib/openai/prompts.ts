@@ -155,12 +155,19 @@ function buildFormatOverride(chartFormat?: ChartFormatConfig): string {
   if (!chartFormat) return ''
 
   const enabledFields = chartFormat.fields.filter(f => f.enabled)
-  if (enabledFields.length === 0) return ''
-
-  let override = '\n\n## 사용자 지정 차트 포맷\n아래 필드만 출력하고, 비활성화된 필드는 빈 값으로 처리해:\n'
-
-  // 기본 필드 매핑
   const defaultKeys = ['cc', 'pi', 'dx', 'plan', 'note']
+
+  // 커스텀 필드, 비활성화된 기본 필드, promptHint, globalPrompt 유무 확인
+  const hasCustomFields = enabledFields.some(f => f.isCustom)
+  const hasDisabledDefaults = defaultKeys.some(k => !enabledFields.some(f => f.key === k))
+  const hasPromptHints = enabledFields.some(f => f.promptHint)
+  const hasGlobalPrompt = !!chartFormat.globalPrompt
+
+  // 기본 설정과 동일하면 오버라이드 불필요
+  if (!hasCustomFields && !hasDisabledDefaults && !hasPromptHints && !hasGlobalPrompt) {
+    return ''
+  }
+
   const keyMapping: Record<string, string> = {
     cc: 'chart.cc',
     pi: 'chart.pi',
@@ -169,7 +176,15 @@ function buildFormatOverride(chartFormat?: ChartFormatConfig): string {
     note: 'note',
   }
 
+  let override = '\n\n## 사용자 지정 차트 포맷\n'
+
+  if (hasDisabledDefaults || hasCustomFields) {
+    override += '아래 필드만 출력하고, 비활성화된 필드는 빈 값으로 처리해:\n'
+  }
+
+  // promptHint가 있는 필드만 지시사항 출력
   enabledFields.forEach(field => {
+    if (!field.promptHint && !field.isCustom) return
     const jsonPath = keyMapping[field.key] || `chart.${field.key}`
     const typeDesc = field.type === 'list' ? '(배열)' : '(문자열)'
     let desc = `- ${jsonPath} ${typeDesc}: ${field.label}`
@@ -180,14 +195,14 @@ function buildFormatOverride(chartFormat?: ChartFormatConfig): string {
   })
 
   // 비활성화된 기본 필드 처리
-  const disabledDefaults = defaultKeys.filter(k => !enabledFields.some(f => f.key === k))
-  if (disabledDefaults.length > 0) {
+  if (hasDisabledDefaults) {
+    const disabledDefaults = defaultKeys.filter(k => !enabledFields.some(f => f.key === k))
     override += `\n비활성화된 필드 (빈 값으로 출력): ${disabledDefaults.map(k => keyMapping[k] || k).join(', ')}\n`
   }
 
   // 커스텀 필드가 있으면 chart 객체에 추가하도록 지시
-  const customFields = enabledFields.filter(f => f.isCustom)
-  if (customFields.length > 0) {
+  if (hasCustomFields) {
+    const customFields = enabledFields.filter(f => f.isCustom)
     override += '\n커스텀 필드를 chart 객체에 추가해서 출력해:\n'
     customFields.forEach(f => {
       const typeDesc = f.type === 'list' ? '배열' : '문자열'
@@ -195,7 +210,7 @@ function buildFormatOverride(chartFormat?: ChartFormatConfig): string {
     })
   }
 
-  if (chartFormat.globalPrompt) {
+  if (hasGlobalPrompt) {
     override += `\n## 추가 지시사항\n${chartFormat.globalPrompt}\n`
   }
 

@@ -131,13 +131,14 @@ export function ChartFormatSettings({ onConfigChange, currentConfig }: ChartForm
     e.preventDefault()
     if (dragIndex === null || dragIndex === index) return
 
+    const newDragIndex = index
     setConfig(prev => {
       const fields = [...prev.fields]
       const [removed] = fields.splice(dragIndex, 1)
-      fields.splice(index, 0, removed)
-      setDragIndex(index)
+      fields.splice(newDragIndex, 0, removed)
       return { ...prev, fields }
     })
+    setDragIndex(newDragIndex)
   }
 
   const handleDragEnd = () => {

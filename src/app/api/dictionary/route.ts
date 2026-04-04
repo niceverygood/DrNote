@@ -11,7 +11,7 @@ const supabase = supabaseUrl && supabaseKey
   : null
 
 // 로컬 스토리지 (DB 없을 때 사용)
-let localTerms: MedicalTerm[] = [...DEFAULT_MEDICAL_TERMS]
+const localTerms: MedicalTerm[] = [...DEFAULT_MEDICAL_TERMS]
 let nextId = 100
 
 // GET: 모든 의학 용어 조회

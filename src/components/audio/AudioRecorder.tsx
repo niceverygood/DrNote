@@ -10,6 +10,9 @@ interface AudioRecorderProps {
   autoSubmit?: boolean // 녹음 종료 시 자동으로 분석 시작
 }
 
+// 녹음 시 바 높이를 미리 생성 (렌더 중 Math.random 호출 방지)
+const RECORDING_BAR_HEIGHTS = [22, 28, 18, 30, 24]
+
 export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: AudioRecorderProps) {
   const {
     state,
@@ -78,13 +81,13 @@ export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: Aud
             {state === 'idle' && <Mic className="w-10 h-10 text-gray-400" />}
             {state === 'recording' && (
               <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {RECORDING_BAR_HEIGHTS.map((h, i) => (
                   <div
                     key={i}
                     className="w-1 bg-white rounded-full animate-pulse"
                     style={{
-                      height: `${16 + Math.random() * 16}px`,
-                      animationDelay: `${i * 0.1}s`,
+                      height: `${h}px`,
+                      animationDelay: `${(i + 1) * 0.1}s`,
                     }}
                   />
                 ))}

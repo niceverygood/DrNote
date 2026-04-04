@@ -51,14 +51,26 @@ export default function CounselorPage() {
     }
   }, [])
 
+  // 초기 로드 + Supabase Realtime 구독
   useEffect(() => {
-    fetchRecords()
-  }, [fetchRecords])
+    let ignore = false
 
-  // Supabase Realtime 구독
-  useEffect(() => {
+    // 초기 데이터 로드
+    async function loadRecords() {
+      try {
+        const response = await fetch('/api/records')
+        const data = await response.json()
+        if (!ignore && data.records) {
+          setRecords(data.records)
+        }
+      } catch (error) {
+        console.error('Fetch records error:', error)
+      }
+    }
+    loadRecords()
+
+    // Realtime 구독
     if (!supabaseUrl || !supabaseKey) return
-
     const supabase = createBrowserClient(supabaseUrl, supabaseKey)
 
     const channel = supabase
@@ -72,7 +84,7 @@ export default function CounselorPage() {
         },
         () => {
           setNewRecordAlert(true)
-          fetchRecords()
+          loadRecords()
           toast.success('새 진료 기록이 도착했습니다!', {
             icon: <Bell className="w-4 h-4" />,
           })
@@ -81,9 +93,10 @@ export default function CounselorPage() {
       .subscribe()
 
     return () => {
+      ignore = true
       supabase.removeChannel(channel)
     }
-  }, [supabaseUrl, supabaseKey, fetchRecords])
+  }, [supabaseUrl, supabaseKey])
 
   const copyText = (section: string, text: string) => {
     navigator.clipboard.writeText(text)

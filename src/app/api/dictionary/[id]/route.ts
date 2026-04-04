@@ -10,7 +10,7 @@ const supabase = supabaseUrl && supabaseKey
   : null
 
 // 로컬 스토리지
-let localTerms: MedicalTerm[] = [...DEFAULT_MEDICAL_TERMS]
+const localTerms: MedicalTerm[] = [...DEFAULT_MEDICAL_TERMS]
 
 // PUT: 용어 수정
 export async function PUT(

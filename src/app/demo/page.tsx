@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { AudioRecorder } from '@/components/audio'
 import { Progress } from '@/components/ui/progress'
 import { ChartFormatSettings, loadChartFormat } from '@/components/ChartFormatSettings'
+import { InsuranceCodes } from '@/components/InsuranceCodes'
+import { PrescriptionPanel } from '@/components/PrescriptionPanel'
+import { PatientTimeline } from '@/components/PatientTimeline'
 import {
   ArrowLeft,
   RotateCcw,
@@ -467,6 +470,29 @@ export default function DemoPage() {
               <History className="w-4 h-4" />
               기록
             </button>
+            {records.length > 0 && (
+              <PatientTimeline
+                records={records}
+                currentRecordId={state.chartData ? undefined : undefined}
+                onSelectRecord={(record) => {
+                  setState({
+                    step: 'done',
+                    progress: 100,
+                    transcript: record.transcript,
+                    chartData: {
+                      chart: record.chart,
+                      chart_structured: record.chart_structured || { cc: '', pi: '', diagnosis: [], plan: [] },
+                      note: record.note || '',
+                      keywords: record.keywords,
+                      consultation_type: record.consultation_type || 'initial',
+                      counselor_summary: record.counselor_summary || { explanation: '', treatment_reason: '', treatment_items: [] },
+                    },
+                    error: '',
+                  })
+                  setShowHistory(false)
+                }}
+              />
+            )}
             <Link href="/dictionary" className="btn-ghost text-sm py-2 px-3">
               <BookOpen className="w-4 h-4" />
               사전
@@ -787,6 +813,18 @@ export default function DemoPage() {
                   </div>
                 </div>
               )}
+
+              {/* Insurance Codes */}
+              <InsuranceCodes
+                diagnoses={cs.diagnosis}
+                plans={cs.plan}
+              />
+
+              {/* Prescription Suggestions */}
+              <PrescriptionPanel
+                diagnoses={cs.diagnosis}
+                plans={cs.plan}
+              />
             </div>
           </div>
         )}

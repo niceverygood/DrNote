@@ -56,6 +56,7 @@ interface ChartRecord {
   keywords: string[]
   consultation_type: ConsultationType
   counselor_summary: CounselorSummary | null
+  patient_name?: string
   created_at: string
 }
 
@@ -116,6 +117,7 @@ export default function DemoPage() {
   const [keywordSearch, setKeywordSearch] = useState('')
   const [copiedSection, setCopiedSection] = useState<string | null>(null)
   const [consultationType, setConsultationType] = useState<ConsultationType>('initial')
+  const [patientName, setPatientName] = useState('')
 
   // 추가 정보
   const [additionalInfo, setAdditionalInfo] = useState<AdditionalInfo>({
@@ -244,9 +246,13 @@ export default function DemoPage() {
     fetchRecords()
   }, [fetchRecords])
 
-  // 기록 저장
+  // 기록 저장 (보험코드 + 처방 자동 포함)
   const saveRecord = useCallback(async (transcript: string, chartData: ChartData) => {
     try {
+      const cs = chartData.chart_structured
+      const codes = matchInsuranceCodes(cs.diagnosis, cs.plan)
+      const rx = matchPrescriptions(cs.diagnosis, cs.plan)
+
       await fetch('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,13 +265,21 @@ export default function DemoPage() {
           consultation_type: chartData.consultation_type,
           counselor_summary: chartData.counselor_summary,
           additional_info: additionalInfo,
+          patient_name: patientName || null,
+          insurance_codes: codes,
+          prescriptions: rx.map(s => ({
+            name: s.name,
+            nameKo: s.nameKo,
+            medications: s.medications,
+            additionalNote: s.additionalNote,
+          })),
         }),
       })
       fetchRecords()
     } catch (error) {
       console.error('Save record error:', error)
     }
-  }, [fetchRecords, additionalInfo])
+  }, [fetchRecords, additionalInfo, patientName])
 
   const processAudio = useCallback(async (audioBlob: Blob) => {
     setState({ ...initialState, step: 'uploading', progress: 10 })
@@ -343,6 +357,7 @@ export default function DemoPage() {
     setTranslation(null)
     setSelectedLanguage(null)
     setPatientEducation(null)
+    setPatientName('')
   }, [])
 
   // 샘플 데모 실행
@@ -596,30 +611,42 @@ export default function DemoPage() {
         {/* Initial State - Recording */}
         {state.step === 'idle' && (
           <div className="flex flex-col items-center justify-center py-20">
-            {/* 초진/재진 선택 */}
-            <div className="mb-8 flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-600">진료 유형:</span>
-              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                <button
-                  onClick={() => setConsultationType('initial')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    consultationType === 'initial'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  초진 (Initial)
-                </button>
-                <button
-                  onClick={() => setConsultationType('follow_up')}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
-                    consultationType === 'follow_up'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  재진 (Follow-up)
-                </button>
+            {/* 환자명 + 초진/재진 선택 */}
+            <div className="mb-8 flex items-center gap-4 flex-wrap justify-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-600">환자명:</span>
+                <input
+                  type="text"
+                  placeholder="(선택) 환자 이름"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  className="w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-600">진료 유형:</span>
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => setConsultationType('initial')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      consultationType === 'initial'
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    초진 (Initial)
+                  </button>
+                  <button
+                    onClick={() => setConsultationType('follow_up')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      consultationType === 'follow_up'
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    재진 (Follow-up)
+                  </button>
+                </div>
               </div>
             </div>
 

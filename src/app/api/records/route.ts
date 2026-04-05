@@ -9,17 +9,27 @@ const supabase = supabaseUrl && supabaseKey
   : null
 
 // GET: 기록 목록 조회
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!supabase) {
     return NextResponse.json({ records: [], source: 'no-db' })
   }
 
   try {
-    const { data, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const patientName = searchParams.get('patient_name')
+    const limit = Math.min(Number(searchParams.get('limit')) || 50, 100)
+
+    let query = supabase
       .from('chart_records')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(limit)
+
+    if (patientName) {
+      query = query.eq('patient_name', patientName)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Records fetch error:', error)
@@ -50,6 +60,9 @@ export async function POST(request: NextRequest) {
       chart_structured,
       additional_info,
       counselor_summary,
+      patient_name,
+      insurance_codes,
+      prescriptions,
     } = body
 
     if (!transcript || !chart) {
@@ -70,6 +83,9 @@ export async function POST(request: NextRequest) {
         chart_structured: chart_structured || {},
         additional_info: additional_info || {},
         counselor_summary: counselor_summary || {},
+        patient_name: patient_name || null,
+        insurance_codes: insurance_codes || {},
+        prescriptions: prescriptions || [],
       })
       .select()
       .single()

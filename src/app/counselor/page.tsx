@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
+import { InsuranceCodes } from '@/components/InsuranceCodes'
+import { PrescriptionPanel } from '@/components/PrescriptionPanel'
 import {
   ArrowLeft,
   Users,
@@ -290,6 +292,22 @@ export default function CounselorPage() {
                       )}
                     </div>
                   </div>
+                )}
+
+                {/* Insurance Codes */}
+                {selectedRecord.chart_structured && (
+                  <InsuranceCodes
+                    diagnoses={selectedRecord.chart_structured.diagnosis}
+                    plans={selectedRecord.chart_structured.plan}
+                  />
+                )}
+
+                {/* Prescriptions */}
+                {selectedRecord.chart_structured && (
+                  <PrescriptionPanel
+                    diagnoses={selectedRecord.chart_structured.diagnosis}
+                    plans={selectedRecord.chart_structured.plan}
+                  />
                 )}
 
                 {/* Keywords */}

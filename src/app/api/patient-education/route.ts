@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { openai, GPT_CONFIG } from '@/lib/openai'
+import { callClaudeJSON } from '@/lib/openai/claude-helper'
 import { PATIENT_EDUCATION_SYSTEM_PROMPT, PATIENT_EDUCATION_USER_PROMPT } from '@/lib/openai/prompts'
 
 export const runtime = 'nodejs'
@@ -16,33 +16,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const response = await openai.chat.completions.create({
-      model: GPT_CONFIG.model,
+    const educationData = await callClaudeJSON<{
+      title?: string
+      description?: string
+      causes?: string
+      symptoms?: string
+      treatment?: string
+      precautions?: string
+      recovery?: string
+    }>({
+      system: PATIENT_EDUCATION_SYSTEM_PROMPT,
+      user: PATIENT_EDUCATION_USER_PROMPT(diagnoses),
       temperature: 0.4,
-      max_tokens: 1500,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: 'system', content: PATIENT_EDUCATION_SYSTEM_PROMPT },
-        { role: 'user', content: PATIENT_EDUCATION_USER_PROMPT(diagnoses) },
-      ],
+      maxTokens: 1500,
     })
-
-    const responseText = response.choices[0]?.message?.content || '{}'
-
-    let educationData
-    try {
-      educationData = JSON.parse(responseText)
-    } catch {
-      educationData = {
-        title: diagnoses.join(', '),
-        description: responseText,
-        causes: '',
-        symptoms: '',
-        treatment: '',
-        precautions: '',
-        recovery: '',
-      }
-    }
 
     return NextResponse.json({
       success: true,

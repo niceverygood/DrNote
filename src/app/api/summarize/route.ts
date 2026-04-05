@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { openai, GPT_CONFIG } from '@/lib/openai'
+import { callClaudeJSON } from '@/lib/openai/claude-helper'
 import { DEFAULT_MEDICAL_TERMS, buildDictionaryPrompt } from '@/lib/medical-dictionary'
 import { buildSystemPrompt, SUMMARY_USER_PROMPT } from '@/lib/openai/prompts'
 import type { ChartResponse, ConsultationType } from '@/types/database'
@@ -81,24 +81,20 @@ Plan: ${(cs.plan || []).join(', ')}`
       userPrompt = `## 이전 진료 기록 (참고)\n${prevContext}\n\n## 오늘 진료 대화\n${transcript}\n\n위 이전 기록을 참고하여 오늘 진료 내용을 차트로 변환해줘. PI에 이전 치료 대비 변화를 반영해줘.`
     }
 
-    // GPT-4o로 차트 생성
-    const summaryResponse = await openai.chat.completions.create({
-      model: GPT_CONFIG.model,
-      temperature: 0.3,
-      max_tokens: 2000,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    })
-
-    const responseText = summaryResponse.choices[0]?.message?.content || '{}'
-
-    // JSON 파싱
+    // Claude Opus 4.6으로 차트 생성
     let chartData: ChartResponse
     try {
-      const parsed = JSON.parse(responseText)
+      const parsed = await callClaudeJSON<{
+        chart?: { cc?: string; pi?: string; diagnosis?: string[]; plan?: string[] }
+        note?: string
+        keywords?: string[]
+        consultation_type?: string
+        counselor_summary?: { explanation?: string; treatment_reason?: string; treatment_items?: string[] }
+      }>({
+        system: systemPrompt,
+        user: userPrompt,
+      })
+
       chartData = {
         chart: {
           cc: parsed.chart?.cc || '',
@@ -119,7 +115,7 @@ Plan: ${(cs.plan || []).join(', ')}`
       }
     } catch {
       chartData = {
-        chart: { cc: responseText, pi: '', diagnosis: [], plan: [] },
+        chart: { cc: '', pi: '', diagnosis: [], plan: [] },
         note: '',
         keywords: [],
         consultation_type: validType,

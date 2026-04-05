@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { openai, GPT_CONFIG } from '@/lib/openai'
+import { callClaudeJSON } from '@/lib/openai/claude-helper'
 import { TRANSLATE_SYSTEM_PROMPT, TRANSLATE_USER_PROMPT } from '@/lib/openai/prompts'
 
 export const runtime = 'nodejs'
@@ -18,31 +18,17 @@ export async function POST(request: NextRequest) {
 
     const chartWithNote = { ...chart, note: note || '' }
 
-    const response = await openai.chat.completions.create({
-      model: GPT_CONFIG.model,
-      temperature: 0.3,
-      max_tokens: 1500,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: 'system', content: TRANSLATE_SYSTEM_PROMPT },
-        { role: 'user', content: TRANSLATE_USER_PROMPT(chartWithNote, language) },
-      ],
+    const translationData = await callClaudeJSON<{
+      translated_cc?: string
+      translated_pi?: string
+      translated_diagnosis?: string
+      translated_plan?: string
+      translated_note?: string
+    }>({
+      system: TRANSLATE_SYSTEM_PROMPT,
+      user: TRANSLATE_USER_PROMPT(chartWithNote, language),
+      maxTokens: 1500,
     })
-
-    const responseText = response.choices[0]?.message?.content || '{}'
-
-    let translationData
-    try {
-      translationData = JSON.parse(responseText)
-    } catch {
-      translationData = {
-        translated_cc: '',
-        translated_pi: '',
-        translated_diagnosis: '',
-        translated_plan: '',
-        translated_note: responseText,
-      }
-    }
 
     return NextResponse.json({
       success: true,

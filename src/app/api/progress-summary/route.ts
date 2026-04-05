@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { openai, GPT_CONFIG } from '@/lib/openai'
+import { callClaudeJSON } from '@/lib/openai/claude-helper'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -37,19 +37,16 @@ Plan: ${(cs.plan || []).join(', ')}
 Note: ${r.note || ''}`
     }).filter(Boolean).join('\n\n')
 
-    const response = await openai.chat.completions.create({
-      model: GPT_CONFIG.model,
-      temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: 'system', content: PROGRESS_SYSTEM_PROMPT },
-        { role: 'user', content: `다음 ${records.length}회차 진료 기록의 경과를 요약해줘:\n\n${recordText}` },
-      ],
+    const data = await callClaudeJSON<{
+      summary: string
+      timeline: string
+      improvement: string
+      recommendation: string
+    }>({
+      system: PROGRESS_SYSTEM_PROMPT,
+      user: `다음 ${records.length}회차 진료 기록의 경과를 요약해줘:\n\n${recordText}`,
+      maxTokens: 1000,
     })
-
-    const text = response.choices[0]?.message?.content || '{}'
-    const data = JSON.parse(text)
 
     return NextResponse.json({ success: true, data })
   } catch (error) {

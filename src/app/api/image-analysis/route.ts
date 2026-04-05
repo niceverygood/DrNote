@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { callClaudeVision } from '@/lib/openai/claude-helper'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -10,7 +10,7 @@ const ANALYSIS_PROMPTS: Record<AnalysisType, string> = {
   bone_age: `너는 소아정형외과 영상의학 전문의야.
 이 손/손목 X-ray 영상을 분석해서 골연령(Bone Age)을 평가해줘.
 
-반드시 아래 JSON 형식으로만 응답해:
+반드시 아래 JSON 형식으로만 응답해. 다른 텍스트 없이 JSON만 출력해:
 {
   "analysis_type": "bone_age",
   "findings": {
@@ -31,14 +31,7 @@ const ANALYSIS_PROMPTS: Record<AnalysisType, string> = {
   spine_alignment: `너는 척추 전문 정형외과 영상의학 전문의야.
 이 척추 X-ray 영상을 분석해서 정렬(Alignment) 상태와 주요 각도를 측정해줘.
 
-측정 항목:
-- Cobb angle (측만각)
-- Lumbar lordosis (요추 전만각)
-- Thoracic kyphosis (흉추 후만각)
-- Sagittal vertical axis (SVA, 시상면 수직축)
-- Pelvic incidence (골반 입사각)
-
-반드시 아래 JSON 형식으로만 응답해:
+반드시 아래 JSON 형식으로만 응답해. 다른 텍스트 없이 JSON만 출력해:
 {
   "analysis_type": "spine_alignment",
   "findings": {
@@ -62,14 +55,7 @@ const ANALYSIS_PROMPTS: Record<AnalysisType, string> = {
   knee_alignment: `너는 무릎 전문 정형외과 영상의학 전문의야.
 이 무릎/하지 X-ray 영상을 분석해서 정렬(Alignment) 상태와 주요 각도를 측정해줘.
 
-측정 항목:
-- Mechanical axis deviation (기계적 축 편위)
-- Anatomical tibiofemoral angle (해부학적 경대퇴각)
-- Joint line convergence angle (관절선 수렴각)
-- Valgus/Varus 정도
-- Kellgren-Lawrence grade (퇴행성 관절염 등급)
-
-반드시 아래 JSON 형식으로만 응답해:
+반드시 아래 JSON 형식으로만 응답해. 다른 텍스트 없이 JSON만 출력해:
 {
   "analysis_type": "knee_alignment",
   "findings": {
@@ -92,7 +78,7 @@ const ANALYSIS_PROMPTS: Record<AnalysisType, string> = {
   general: `너는 정형외과 영상의학 전문의야.
 이 X-ray/영상을 분석해서 정형외과적으로 의미있는 소견을 찾아줘.
 
-반드시 아래 JSON 형식으로만 응답해:
+반드시 아래 JSON 형식으로만 응답해. 다른 텍스트 없이 JSON만 출력해:
 {
   "analysis_type": "general",
   "findings": {
@@ -134,39 +120,20 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\n환자 나이: ${patientAge}세 (이 정보를 분석에 참고해줘)`
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      temperature: 0.2,
-      max_tokens: 2000,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64}`,
-                detail: 'high',
-              },
-            },
-            {
-              type: 'text',
-              text: '이 영상을 분석해줘.',
-            },
-          ],
-        },
-      ],
+    // Claude Opus 4.6 Vision으로 영상 분석
+    const responseText = await callClaudeVision({
+      system: systemPrompt,
+      userText: '이 영상을 분석해줘.',
+      imageBase64: base64,
+      mimeType,
+      maxTokens: 2000,
     })
-
-    const responseText = response.choices[0]?.message?.content || '{}'
 
     let analysisData
     try {
-      analysisData = JSON.parse(responseText)
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)```/) || responseText.match(/(\{[\s\S]*\})/)
+      const jsonStr = jsonMatch ? jsonMatch[1] : responseText
+      analysisData = JSON.parse(jsonStr.trim())
     } catch {
       analysisData = {
         analysis_type: analysisType,

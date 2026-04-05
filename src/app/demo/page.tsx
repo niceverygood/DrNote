@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { AudioRecorder } from '@/components/audio'
 import { Progress } from '@/components/ui/progress'
@@ -8,6 +8,8 @@ import { ChartFormatSettings, loadChartFormat } from '@/components/ChartFormatSe
 import { InsuranceCodes } from '@/components/InsuranceCodes'
 import { PrescriptionPanel } from '@/components/PrescriptionPanel'
 import { PatientTimeline } from '@/components/PatientTimeline'
+import { matchInsuranceCodes } from '@/lib/insurance-codes'
+import { matchPrescriptions } from '@/lib/prescriptions'
 import {
   ArrowLeft,
   RotateCcw,
@@ -27,6 +29,9 @@ import {
   GraduationCap,
   Users,
   Scan,
+  Zap,
+  AlertTriangle,
+  FileDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ConsultationType, ChartStructured, CounselorSummary, AdditionalInfo, ChartFormatConfig } from '@/types/database'
@@ -132,6 +137,95 @@ export default function DemoPage() {
 
   // 차트 포맷 설정
   const [chartFormat, setChartFormat] = useState<ChartFormatConfig>(() => loadChartFormat())
+
+  // 필드 키에 따른 콘텐츠 추출 (여러 곳에서 사용)
+  const getFieldContent = useCallback((key: string, chartStructured: ChartStructured, chartData: ChartData): string => {
+    switch (key) {
+      case 'cc': return chartStructured.cc
+      case 'pi': return chartStructured.pi
+      case 'dx': return chartStructured.diagnosis.join('\n')
+      case 'plan': return chartStructured.plan.map(p => `- ${p}`).join('\n')
+      case 'note': return chartData.note || ''
+      default: {
+        const custom = (chartStructured as unknown as Record<string, unknown>)[key]
+        if (Array.isArray(custom)) return custom.join('\n')
+        if (typeof custom === 'string') return custom
+        return ''
+      }
+    }
+  }, [])
+
+  // 자동 재진 감지: 현재 차트와 유사한 이전 기록 찾기
+  const similarPastRecords = useMemo(() => {
+    if (!state.chartData?.chart_structured) return []
+    const currentCc = state.chartData.chart_structured.cc.toLowerCase()
+    if (!currentCc) return []
+
+    // CC의 부위 키워드 추출
+    const bodyParts = currentCc.replace(/pain|stiffness|f\/u|ache|discomfort|numbness|tingling/gi, '').trim()
+    if (bodyParts.length < 2) return []
+
+    return records.filter(r => {
+      if (!r.chart_structured?.cc) return false
+      const pastCc = r.chart_structured.cc.toLowerCase()
+      const pastBody = pastCc.replace(/pain|stiffness|f\/u|ache|discomfort|numbness|tingling/gi, '').trim()
+      return pastBody === bodyParts && r.id !== state.chartData?.chart // 같은 부위, 다른 기록
+    })
+  }, [state.chartData, records])
+
+  // EMR 통합 복사 (차트 + 보험코드 + 처방)
+  const copyForEMR = useCallback(() => {
+    if (!state.chartData) return
+    const cs = state.chartData.chart_structured
+    const { kcd, edi } = matchInsuranceCodes(cs.diagnosis, cs.plan)
+    const prescriptions = matchPrescriptions(cs.diagnosis, cs.plan)
+
+    let content = ''
+
+    // 차트
+    chartFormat.fields
+      .filter(f => f.enabled)
+      .forEach(field => {
+        const fieldContent = getFieldContent(field.key, cs, state.chartData!)
+        if (fieldContent) {
+          content += `[${field.badge}] ${fieldContent}\n`
+        }
+      })
+
+    // 추가 정보
+    const ai = additionalInfo
+    if (ai.pmh || ai.surgical_history || ai.medication || ai.allergy) {
+      content += '\n--- Additional Info ---\n'
+      if (ai.pmh) content += `PMH: ${ai.pmh}\n`
+      if (ai.surgical_history) content += `Surgical Hx: ${ai.surgical_history}\n`
+      if (ai.medication) content += `Medication: ${ai.medication}\n`
+      if (ai.allergy) content += `Allergy: ${ai.allergy}\n`
+    }
+
+    // 보험코드
+    if (kcd.length > 0) {
+      content += '\n--- KCD ---\n'
+      content += kcd.map(c => `${c.code} ${c.nameKo}`).join('\n') + '\n'
+    }
+    if (edi.length > 0) {
+      content += '\n--- EDI ---\n'
+      content += edi.map(c => `${c.code} ${c.nameKo}`).join('\n') + '\n'
+    }
+
+    // 처방
+    if (prescriptions.length > 0) {
+      content += '\n--- 처방 ---\n'
+      prescriptions.forEach(set => {
+        content += `[${set.nameKo}]\n`
+        set.medications.forEach(m => {
+          content += `  ${m.nameKo} ${m.dose} ${m.frequency} ${m.duration}${m.note ? ` (${m.note})` : ''}\n`
+        })
+      })
+    }
+
+    navigator.clipboard.writeText(content.trim())
+    toast.success('EMR 통합 복사 완료 (차트+코드+처방)')
+  }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
 
   // 기록 불러오기
   const fetchRecords = useCallback(async () => {
@@ -379,7 +473,7 @@ export default function DemoPage() {
   }
 
   // 전체 복사 (활성화된 필드만 + 추가정보)
-  const copyAll = () => {
+  const copyAll = useCallback(() => {
     if (!state.chartData) return
     const chartStructured = state.chartData.chart_structured
 
@@ -405,7 +499,7 @@ export default function DemoPage() {
 
     navigator.clipboard.writeText(content.trim())
     toast.success('전체 복사되었습니다')
-  }
+  }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
 
   // 키워드 하이라이트
   const highlightKeywords = (text: string) => {
@@ -417,24 +511,6 @@ export default function DemoPage() {
         <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
       ) : part
     )
-  }
-
-  // 필드 키에 따른 콘텐츠 추출
-  const getFieldContent = (key: string, chartStructured: ChartStructured, chartData: ChartData): string => {
-    switch (key) {
-      case 'cc': return chartStructured.cc
-      case 'pi': return chartStructured.pi
-      case 'dx': return chartStructured.diagnosis.join('\n')
-      case 'plan': return chartStructured.plan.map(p => `- ${p}`).join('\n')
-      case 'note': return chartData.note || ''
-      default: {
-        // 커스텀 필드: chart_structured에 동적으로 추가된 필드에서 가져오기
-        const custom = (chartStructured as unknown as Record<string, unknown>)[key]
-        if (Array.isArray(custom)) return custom.join('\n')
-        if (typeof custom === 'string') return custom
-        return ''
-      }
-    }
   }
 
   const isProcessing = state.step !== 'idle' && state.step !== 'done' && state.step !== 'error'
@@ -657,13 +733,64 @@ export default function DemoPage() {
                     />
                     <button
                       onClick={copyAll}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <Copy className="w-4 h-4" />
-                      전체 복사
+                      복사
+                    </button>
+                    <button
+                      onClick={copyForEMR}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                      title="차트 + 보험코드 + 처방 통합 복사"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      EMR 복사
                     </button>
                   </div>
                 </div>
+
+                {/* 자동 재진 감지 알림 */}
+                {similarPastRecords.length > 0 && state.chartData.consultation_type === 'initial' && (
+                  <div className="mx-4 mt-3 p-3 bg-orange-50 border border-orange-200 rounded-xl">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-orange-800">
+                          동일 부위 이전 기록 {similarPastRecords.length}건 발견
+                        </p>
+                        <p className="text-xs text-orange-600 mt-0.5">
+                          최근: {similarPastRecords[0].chart_structured?.diagnosis.join(', ')}
+                          {' · '}
+                          {new Date(similarPastRecords[0].created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          // 가장 최근 이전 기록의 정보를 참조
+                          const prev = similarPastRecords[0]
+                          setState(s => ({
+                            ...s,
+                            chartData: s.chartData ? {
+                              ...s.chartData,
+                              consultation_type: 'follow_up',
+                            } : null,
+                          }))
+                          toast.success('재진으로 전환되었습니다')
+                          // 이전 기록의 추가정보 자동 채우기
+                          if (prev.chart_structured) {
+                            const prevNote = prev.note
+                            if (prevNote && !additionalInfo.pmh) {
+                              // Note에서 기존 정보 참조 가능
+                            }
+                          }
+                        }}
+                        className="shrink-0 px-2.5 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-lg transition-colors"
+                      >
+                        재진 전환
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
                   {chartFormat.fields
@@ -693,18 +820,34 @@ export default function DemoPage() {
                           translation={translationMap[field.key]}
                         >
                           {field.key === 'dx' && (
-                            <button
-                              onClick={generatePatientEducation}
-                              disabled={generatingEducation}
-                              className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
-                            >
-                              {generatingEducation ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <GraduationCap className="w-3.5 h-3.5" />
-                              )}
-                              환자 설명 생성
-                            </button>
+                            <div className="mt-2 flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={generatePatientEducation}
+                                disabled={generatingEducation}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+                              >
+                                {generatingEducation ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <GraduationCap className="w-3.5 h-3.5" />
+                                )}
+                                환자 설명
+                              </button>
+                              <button
+                                onClick={() => {
+                                  generatePatientEducation()
+                                  // 스크롤을 보험코드/처방 영역으로
+                                  setTimeout(() => {
+                                    document.getElementById('insurance-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                                  }, 100)
+                                }}
+                                disabled={generatingEducation}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                              >
+                                <Zap className="w-3.5 h-3.5" />
+                                전체 분석
+                              </button>
+                            </div>
                           )}
                         </ChartSection>
                       )
@@ -815,10 +958,12 @@ export default function DemoPage() {
               )}
 
               {/* Insurance Codes */}
-              <InsuranceCodes
-                diagnoses={cs.diagnosis}
-                plans={cs.plan}
-              />
+              <div id="insurance-section">
+                <InsuranceCodes
+                  diagnoses={cs.diagnosis}
+                  plans={cs.plan}
+                />
+              </div>
 
               {/* Prescription Suggestions */}
               <PrescriptionPanel

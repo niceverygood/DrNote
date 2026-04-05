@@ -10,8 +10,12 @@ import {
   ArrowRight,
   X,
   Search,
+  Pill,
+  Shield,
 } from 'lucide-react'
 import type { ChartStructured, CounselorSummary, ConsultationType } from '@/types/database'
+import { matchInsuranceCodes } from '@/lib/insurance-codes'
+import { matchPrescriptions } from '@/lib/prescriptions'
 
 interface TimelineRecord {
   id: string
@@ -275,22 +279,41 @@ export function PatientTimeline({ records, currentRecordId, onSelectRecord }: Pa
                                 </span>
                               </div>
 
-                              {cs && (
-                                <div className="space-y-1 text-sm">
-                                  <div className="flex gap-2">
-                                    <span className="shrink-0 text-xs font-bold text-blue-600 w-6">CC</span>
-                                    <span className="text-gray-700">{cs.cc}</span>
+                              {cs && (() => {
+                                const codes = matchInsuranceCodes(cs.diagnosis, cs.plan)
+                                const rx = matchPrescriptions(cs.diagnosis, cs.plan)
+                                return (
+                                  <div className="space-y-1.5 text-sm">
+                                    <div className="flex gap-2">
+                                      <span className="shrink-0 text-xs font-bold text-blue-600 w-6">CC</span>
+                                      <span className="text-gray-700">{cs.cc}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <span className="shrink-0 text-xs font-bold text-amber-600 w-6">Dx</span>
+                                      <span className="text-gray-700">{cs.diagnosis.join(', ')}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <span className="shrink-0 text-xs font-bold text-purple-600 w-6">P</span>
+                                      <span className="text-gray-700">{cs.plan.join(', ')}</span>
+                                    </div>
+                                    {/* 보험코드 + 처방 미니 요약 */}
+                                    <div className="flex flex-wrap gap-1.5 mt-1 pt-1.5 border-t border-gray-100">
+                                      {codes.kcd.slice(0, 3).map(c => (
+                                        <span key={c.code} className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-mono">
+                                          <Shield className="w-2.5 h-2.5" />
+                                          {c.code}
+                                        </span>
+                                      ))}
+                                      {rx.slice(0, 2).map(r => (
+                                        <span key={r.name} className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-rose-50 text-rose-600 rounded">
+                                          <Pill className="w-2.5 h-2.5" />
+                                          {r.medications[0]?.nameKo}
+                                        </span>
+                                      ))}
+                                    </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <span className="shrink-0 text-xs font-bold text-amber-600 w-6">Dx</span>
-                                    <span className="text-gray-700">{cs.diagnosis.join(', ')}</span>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <span className="shrink-0 text-xs font-bold text-purple-600 w-6">P</span>
-                                    <span className="text-gray-700">{cs.plan.join(', ')}</span>
-                                  </div>
-                                </div>
-                              )}
+                                )
+                              })()}
 
                               {/* Changes from previous visit */}
                               {changes.length > 0 && (

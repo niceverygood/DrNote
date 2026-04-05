@@ -8,6 +8,9 @@ import { ChartFormatSettings, loadChartFormat } from '@/components/ChartFormatSe
 import { InsuranceCodes } from '@/components/InsuranceCodes'
 import { PrescriptionPanel } from '@/components/PrescriptionPanel'
 import { PatientTimeline } from '@/components/PatientTimeline'
+import { PatientAutocomplete } from '@/components/PatientAutocomplete'
+import { SessionCompletePanel } from '@/components/SessionCompletePanel'
+import { FavoritePrescriptions } from '@/components/FavoritePrescriptions'
 import { matchInsuranceCodes } from '@/lib/insurance-codes'
 import { matchPrescriptions } from '@/lib/prescriptions'
 import {
@@ -306,6 +309,11 @@ export default function DemoPage() {
       setState((s) => ({ ...s, transcript, progress: 60 }))
       setState((s) => ({ ...s, step: 'summarizing', progress: 70 }))
 
+      // 이전 기록 GPT 주입 (재진 시 or 동일 환자)
+      const prevRecords = patientName
+        ? records.filter(r => r.patient_name === patientName).slice(0, 3)
+        : similarPastRecords.slice(0, 3)
+
       const summaryResponse = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -313,6 +321,10 @@ export default function DemoPage() {
           transcript,
           consultation_type: consultationType,
           chart_format: chartFormat,
+          previous_records: prevRecords.length > 0 ? prevRecords.map(r => ({
+            chart_structured: r.chart_structured,
+            created_at: r.created_at,
+          })) : undefined,
         }),
       })
 
@@ -348,7 +360,7 @@ export default function DemoPage() {
       setState((s) => ({ ...s, step: 'error', error: errorMessage }))
       toast.error(errorMessage)
     }
-  }, [saveRecord, consultationType, chartFormat])
+  }, [saveRecord, consultationType, chartFormat, patientName, records, similarPastRecords])
 
   const resetState = useCallback(() => {
     setState(initialState)
@@ -611,16 +623,27 @@ export default function DemoPage() {
         {/* Initial State - Recording */}
         {state.step === 'idle' && (
           <div className="flex flex-col items-center justify-center py-20">
-            {/* 환자명 + 초진/재진 선택 */}
+            {/* 환자명 자동완성 + 초진/재진 선택 */}
             <div className="mb-8 flex items-center gap-4 flex-wrap justify-center">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">환자명:</span>
-                <input
-                  type="text"
-                  placeholder="(선택) 환자 이름"
+                <span className="text-sm font-medium text-gray-600">환자:</span>
+                <PatientAutocomplete
                   value={patientName}
-                  onChange={(e) => setPatientName(e.target.value)}
-                  className="w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  onChange={setPatientName}
+                  records={records}
+                  onPatientSelect={(info) => {
+                    setConsultationType(info.consultationType)
+                    // 이전 기록의 추가정보 자동 로드
+                    if (info.additionalInfo) {
+                      setAdditionalInfo(prev => ({
+                        pmh: prev.pmh || info.additionalInfo?.pmh || '',
+                        surgical_history: prev.surgical_history || info.additionalInfo?.surgical_history || '',
+                        medication: prev.medication || info.additionalInfo?.medication || '',
+                        allergy: prev.allergy || info.additionalInfo?.allergy || '',
+                      }))
+                    }
+                    toast.success(`${info.name} - ${info.visitCount}회 방문 (재진 모드)`)
+                  }}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -997,6 +1020,12 @@ export default function DemoPage() {
                 diagnoses={cs.diagnosis}
                 plans={cs.plan}
               />
+
+              {/* Favorite Prescriptions */}
+              <FavoritePrescriptions
+                diagnoses={cs.diagnosis}
+                plans={cs.plan}
+              />
             </div>
           </div>
         )}
@@ -1063,19 +1092,14 @@ export default function DemoPage() {
         )}
       </main>
 
-      {/* Bottom Recording Bar */}
-      {state.step === 'done' && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2">
-          <button
-            onClick={resetState}
-            className="flex items-center gap-3 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-full shadow-lg transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-              <Mic className="w-4 h-4" />
-            </div>
-            <span className="font-medium">새 녹음</span>
-          </button>
-        </div>
+      {/* 진료 마무리 패널 */}
+      {state.step === 'done' && state.chartData && (
+        <SessionCompletePanel
+          onCopyChart={copyAll}
+          onCopyEMR={copyForEMR}
+          onNextPatient={resetState}
+          patientEducation={patientEducation}
+        />
       )}
     </div>
   )

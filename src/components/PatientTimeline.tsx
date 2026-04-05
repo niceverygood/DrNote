@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   Clock,
   User,
@@ -12,7 +12,10 @@ import {
   Search,
   Pill,
   Shield,
+  FileText,
+  Loader2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { ChartStructured, CounselorSummary, ConsultationType } from '@/types/database'
 import { matchInsuranceCodes } from '@/lib/insurance-codes'
 import { matchPrescriptions } from '@/lib/prescriptions'
@@ -111,6 +114,37 @@ export function PatientTimeline({ records, currentRecordId, onSelectRecord }: Pa
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
+  const [progressSummary, setProgressSummary] = useState<{ summary: string; timeline: string; improvement: string; recommendation: string } | null>(null)
+  const [generatingSummary, setGeneratingSummary] = useState(false)
+
+  const generateProgressSummary = useCallback(async (groupRecords: TimelineRecord[]) => {
+    if (groupRecords.length < 2) {
+      toast.info('경과 요약은 2회 이상 방문 기록이 필요합니다')
+      return
+    }
+    setGeneratingSummary(true)
+    try {
+      const response = await fetch('/api/progress-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          records: groupRecords.map(r => ({
+            chart_structured: r.chart_structured,
+            created_at: r.created_at,
+            note: r.note,
+          })),
+        }),
+      })
+      if (!response.ok) throw new Error('생성 실패')
+      const result = await response.json()
+      setProgressSummary(result.data)
+      toast.success('경과 요약 생성 완료')
+    } catch {
+      toast.error('경과 요약 생성에 실패했습니다')
+    } finally {
+      setGeneratingSummary(false)
+    }
+  }, [])
 
   // 부위별 그룹핑
   const groups = useMemo(() => {
@@ -216,13 +250,50 @@ export function PatientTimeline({ records, currentRecordId, onSelectRecord }: Pa
                     ← 전체 목록
                   </button>
 
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">{activeGroup.name}</h3>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-lg font-bold text-gray-900">{activeGroup.name}</h3>
+                    {activeGroup.records.length >= 2 && (
+                      <button
+                        onClick={() => generateProgressSummary(activeGroup.records)}
+                        disabled={generatingSummary}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {generatingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                        경과 요약
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 mb-4">
                     총 {activeGroup.records.length}회 방문
                     {' · '}
                     {new Date(activeGroup.records[0].created_at).toLocaleDateString('ko-KR')} ~{' '}
                     {new Date(activeGroup.records[activeGroup.records.length - 1].created_at).toLocaleDateString('ko-KR')}
                   </p>
+
+                  {/* 경과 요약 */}
+                  {progressSummary && (
+                    <div className="mb-4 p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-2">
+                      <h4 className="text-sm font-bold text-cyan-900 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4" />
+                        경과 요약
+                      </h4>
+                      <p className="text-sm text-gray-800">{progressSummary.summary}</p>
+                      <div className="grid gap-1.5 text-xs">
+                        <div className="p-2 bg-white rounded-lg">
+                          <span className="font-semibold text-gray-600">타임라인:</span>{' '}
+                          <span className="text-gray-700">{progressSummary.timeline}</span>
+                        </div>
+                        <div className="p-2 bg-white rounded-lg">
+                          <span className="font-semibold text-gray-600">호전도:</span>{' '}
+                          <span className="text-gray-700">{progressSummary.improvement}</span>
+                        </div>
+                        <div className="p-2 bg-white rounded-lg">
+                          <span className="font-semibold text-gray-600">권고:</span>{' '}
+                          <span className="text-gray-700">{progressSummary.recommendation}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="relative">
                     {/* Timeline Line */}

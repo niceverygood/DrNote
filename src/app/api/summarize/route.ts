@@ -43,7 +43,7 @@ async function getMedicalDictionary(): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { transcript, consultation_type = 'initial', chart_format } = await request.json()
+    const { transcript, consultation_type = 'initial', chart_format, previous_records } = await request.json()
 
     if (!transcript || typeof transcript !== 'string') {
       return NextResponse.json(
@@ -65,6 +65,22 @@ export async function POST(request: NextRequest) {
     const dictionary = await getMedicalDictionary()
     const systemPrompt = buildSystemPrompt(dictionary, validType, chart_format || undefined)
 
+    // 이전 기록 컨텍스트 구성
+    let userPrompt = SUMMARY_USER_PROMPT(transcript)
+    if (previous_records && Array.isArray(previous_records) && previous_records.length > 0) {
+      const prevContext = previous_records.map((r: { chart_structured?: { cc?: string; pi?: string; diagnosis?: string[]; plan?: string[] }; created_at?: string }, i: number) => {
+        const cs = r.chart_structured
+        if (!cs) return ''
+        return `[${i + 1}회차 - ${r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR') : ''}]
+CC: ${cs.cc || ''}
+PI: ${cs.pi || ''}
+Dx: ${(cs.diagnosis || []).join(', ')}
+Plan: ${(cs.plan || []).join(', ')}`
+      }).filter(Boolean).join('\n\n')
+
+      userPrompt = `## 이전 진료 기록 (참고)\n${prevContext}\n\n## 오늘 진료 대화\n${transcript}\n\n위 이전 기록을 참고하여 오늘 진료 내용을 차트로 변환해줘. PI에 이전 치료 대비 변화를 반영해줘.`
+    }
+
     // GPT-4o로 차트 생성
     const summaryResponse = await openai.chat.completions.create({
       model: GPT_CONFIG.model,
@@ -73,7 +89,7 @@ export async function POST(request: NextRequest) {
       response_format: { type: "json_object" },
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: SUMMARY_USER_PROMPT(transcript) },
+        { role: 'user', content: userPrompt },
       ],
     })
 

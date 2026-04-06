@@ -5,20 +5,22 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 import { Mic, Square, Pause, Play, RotateCcw, Upload, Sparkles } from 'lucide-react'
 
 interface AudioRecorderProps {
-  onAudioReady: (blob: Blob) => void
+  onRecordingComplete: (transcript: string) => void  // 음성인식된 텍스트 전달
+  onAudioReady?: (blob: Blob) => void                // 레거시 호환 (파일 업로드용)
   disabled?: boolean
-  autoSubmit?: boolean // 녹음 종료 시 자동으로 분석 시작
+  autoSubmit?: boolean
 }
 
-// 녹음 시 바 높이를 미리 생성 (렌더 중 Math.random 호출 방지)
 const RECORDING_BAR_HEIGHTS = [22, 28, 18, 30, 24]
 
-export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: AudioRecorderProps) {
+export function AudioRecorder({ onRecordingComplete, onAudioReady, disabled, autoSubmit = true }: AudioRecorderProps) {
   const {
     state,
     duration,
     audioBlob,
     audioUrl,
+    transcript,
+    interimTranscript,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -31,11 +33,11 @@ export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: Aud
   const prevStateRef = useRef(state)
   useEffect(() => {
     const wasRecordingOrPaused = prevStateRef.current === 'recording' || prevStateRef.current === 'paused'
-    if (autoSubmit && wasRecordingOrPaused && state === 'stopped' && audioBlob) {
-      onAudioReady(audioBlob)
+    if (autoSubmit && wasRecordingOrPaused && state === 'stopped' && transcript) {
+      onRecordingComplete(transcript)
     }
     prevStateRef.current = state
-  }, [state, audioBlob, autoSubmit, onAudioReady])
+  }, [state, transcript, autoSubmit, onRecordingComplete])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -46,15 +48,15 @@ export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: Aud
   }
 
   const handleSubmit = useCallback(() => {
-    if (audioBlob) {
-      onAudioReady(audioBlob)
+    if (transcript) {
+      onRecordingComplete(transcript)
     }
-  }, [audioBlob, onAudioReady])
+  }, [transcript, onRecordingComplete])
 
   const handleFileUpload = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
-      if (file) {
+      if (file && onAudioReady) {
         onAudioReady(file)
       }
     },
@@ -105,6 +107,19 @@ export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: Aud
           {formatDuration(duration)}
         </div>
 
+        {/* 실시간 자막 */}
+        {(state === 'recording' || state === 'paused') && (transcript || interimTranscript) && (
+          <div className="w-full max-w-lg px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+            <p className="text-xs font-medium text-gray-400 mb-1">실시간 음성인식</p>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {transcript}
+              {interimTranscript && (
+                <span className="text-gray-400">{transcript ? ' ' : ''}{interimTranscript}</span>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* Status Text */}
         {state === 'recording' && (
           <div className="flex items-center gap-2 text-red-500">
@@ -140,22 +155,26 @@ export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: Aud
                 <Mic className="w-5 h-5" />
                 녹음 시작
               </button>
-              <span className="text-gray-300">또는</span>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled}
-                className="btn-secondary px-6 py-4 disabled:opacity-50"
-              >
-                <Upload className="w-5 h-5" />
-                파일 업로드
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+              {onAudioReady && (
+                <>
+                  <span className="text-gray-300">또는</span>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={disabled}
+                    className="btn-secondary px-6 py-4 disabled:opacity-50"
+                  >
+                    <Upload className="w-5 h-5" />
+                    파일 업로드
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </>
+              )}
             </>
           )}
 
@@ -208,7 +227,7 @@ export function AudioRecorder({ onAudioReady, disabled, autoSubmit = true }: Aud
               {!autoSubmit && (
                 <button
                   onClick={handleSubmit}
-                  disabled={disabled}
+                  disabled={disabled || !transcript}
                   className="btn-primary px-8 py-4 text-base disabled:opacity-50"
                 >
                   <Sparkles className="w-5 h-5" />

@@ -284,31 +284,10 @@ export default function DemoPage() {
     }
   }, [fetchRecords, additionalInfo, patientName])
 
-  const processAudio = useCallback(async (audioBlob: Blob) => {
-    setState({ ...initialState, step: 'uploading', progress: 10 })
+  const processAudio = useCallback(async (transcript: string) => {
+    setState({ ...initialState, step: 'summarizing', progress: 50, transcript })
 
     try {
-      setState((s) => ({ ...s, step: 'transcribing', progress: 30 }))
-
-      const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
-
-      const sttResponse = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!sttResponse.ok) {
-        const error = await sttResponse.json()
-        throw new Error(error.error || 'STT 변환 실패')
-      }
-
-      const sttResult = await sttResponse.json()
-      const transcript = sttResult.text
-
-      setState((s) => ({ ...s, transcript, progress: 60 }))
-      setState((s) => ({ ...s, step: 'summarizing', progress: 70 }))
-
       // 이전 기록 GPT 주입 (재진 시 or 동일 환자)
       const prevRecords = patientName
         ? records.filter(r => r.patient_name === patientName).slice(0, 3)
@@ -673,7 +652,7 @@ export default function DemoPage() {
               </div>
             </div>
 
-            <AudioRecorder onAudioReady={processAudio} disabled={isProcessing} />
+            <AudioRecorder onRecordingComplete={processAudio} disabled={isProcessing} />
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-400 mb-3">또는 샘플 데이터로 테스트</p>
               <button onClick={runSampleDemo} className="btn-secondary text-sm">

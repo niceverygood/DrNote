@@ -17,7 +17,6 @@ export function AudioRecorder({ onRecordingComplete, onAudioReady, disabled, aut
   const {
     state,
     duration,
-    audioBlob,
     audioUrl,
     transcript,
     interimTranscript,

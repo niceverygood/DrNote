@@ -1,14 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 
-// Claude 클라이언트 (차트 생성, 번역, 교육, 영상 분석, 경과 요약)
+// Claude 클라이언트 — OpenRouter 경유
 let _anthropic: Anthropic | null = null
 
 export const anthropic: Anthropic = new Proxy({} as Anthropic, {
   get(_, prop) {
     if (!_anthropic) {
       _anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseURL: 'https://openrouter.ai/api/v1',
       })
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,9 +32,9 @@ export const openai: OpenAI = new Proxy({} as OpenAI, {
   },
 })
 
-// Claude Opus 4.6 설정
+// Claude Opus 4.6 via OpenRouter
 export const CLAUDE_CONFIG = {
-  model: 'claude-opus-4-6',
+  model: 'anthropic/claude-opus-4',
   temperature: 0.3,
   max_tokens: 2000,
 }
@@ -45,5 +46,5 @@ export const WHISPER_CONFIG = {
   response_format: 'verbose_json' as const,
 }
 
-// 레거시 호환: GPT_CONFIG는 CLAUDE_CONFIG로 매핑
+// 레거시 호환
 export const GPT_CONFIG = CLAUDE_CONFIG

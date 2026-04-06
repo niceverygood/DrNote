@@ -35,6 +35,7 @@ export const metadata: Metadata = {
   title: 'Dr.Note - 정형외과 AI 차트 요약',
   description: '진료 녹음을 SOAP 형식의 전문 차트로 자동 변환합니다. 정형외과 전문 약어를 활용한 AI 기반 의료 기록 솔루션.',
   keywords: ['정형외과', '진료 기록', 'SOAP', 'AI 요약', '의료 차트', 'EMR'],
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
@@ -44,6 +45,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${pretendard.variable}`}>
+      <head>
+        <meta name="theme-color" content="#0D9488" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Dr.Note" />
+        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+      </head>
       <body className="min-h-screen font-sans antialiased">
         {children}
         <Toaster richColors position="top-center" />

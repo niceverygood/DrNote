@@ -14,6 +14,7 @@ import {
   Clock,
   Star,
   Scan,
+  Calendar as CalendarIcon,
   Smartphone,
   Download,
   Monitor,
@@ -34,6 +35,10 @@ export default function Home() {
             <span className="text-lg font-semibold text-gray-900">Dr.Note</span>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/calendar" className="btn-ghost text-sm py-2 px-3">
+              <CalendarIcon className="w-4 h-4" />
+              예약
+            </Link>
             <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">
               <Users className="w-4 h-4" />
               상담사
@@ -387,6 +392,7 @@ export default function Home() {
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <Link href="/demo" className="hover:text-gray-700">의사용</Link>
             <Link href="/counselor" className="hover:text-gray-700">상담사용</Link>
+            <Link href="/calendar" className="hover:text-gray-700">예약</Link>
             <Link href="/imaging" className="hover:text-gray-700">영상분석</Link>
             <Link href="/dictionary" className="hover:text-gray-700">용어사전</Link>
           </div>

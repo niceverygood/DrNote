@@ -178,16 +178,14 @@ export default function DemoPage() {
     })
   }, [state.chartData, records])
 
-  // EMR 통합 복사 (차트 + 보험코드 + 처방)
+  // EMR 복사 (차트 내용만)
   const copyForEMR = useCallback(() => {
     if (!state.chartData) return
     const cs = state.chartData.chart_structured
-    const { kcd, edi } = matchInsuranceCodes(cs.diagnosis, cs.plan)
-    const prescriptions = matchPrescriptions(cs.diagnosis, cs.plan)
 
     let content = ''
 
-    // 차트
+    // 차트 필드만
     chartFormat.fields
       .filter(f => f.enabled)
       .forEach(field => {
@@ -207,29 +205,8 @@ export default function DemoPage() {
       if (ai.allergy) content += `Allergy: ${ai.allergy}\n`
     }
 
-    // 보험코드
-    if (kcd.length > 0) {
-      content += '\n--- KCD ---\n'
-      content += kcd.map(c => `${c.code} ${c.nameKo}`).join('\n') + '\n'
-    }
-    if (edi.length > 0) {
-      content += '\n--- EDI ---\n'
-      content += edi.map(c => `${c.code} ${c.nameKo}`).join('\n') + '\n'
-    }
-
-    // 처방
-    if (prescriptions.length > 0) {
-      content += '\n--- 처방 ---\n'
-      prescriptions.forEach(set => {
-        content += `[${set.nameKo}]\n`
-        set.medications.forEach(m => {
-          content += `  ${m.nameKo} ${m.dose} ${m.frequency} ${m.duration}${m.note ? ` (${m.note})` : ''}\n`
-        })
-      })
-    }
-
     navigator.clipboard.writeText(content.trim())
-    toast.success('EMR 통합 복사 완료 (차트+코드+처방)')
+    toast.success('차트 내용이 복사되었습니다')
   }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
 
   // 기록 불러오기

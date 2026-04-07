@@ -1,4 +1,4 @@
-import { anthropic, CLAUDE_CONFIG } from './client'
+import { router, CLAUDE_CONFIG } from './client'
 
 interface ClaudeMessageOptions {
   system: string
@@ -8,24 +8,20 @@ interface ClaudeMessageOptions {
 }
 
 /**
- * Claude API 호출 후 텍스트 응답 반환
+ * Claude API 호출 (OpenRouter 경유, OpenAI 호환 형식)
  */
 export async function callClaude(options: ClaudeMessageOptions): Promise<string> {
-  const response = await anthropic.messages.create({
+  const response = await router.chat.completions.create({
     model: CLAUDE_CONFIG.model,
     max_tokens: options.maxTokens || CLAUDE_CONFIG.max_tokens,
     temperature: options.temperature ?? CLAUDE_CONFIG.temperature,
-    system: options.system,
     messages: [
+      { role: 'system', content: options.system },
       { role: 'user', content: options.user },
     ],
   })
 
-  const block = response.content[0]
-  if (block.type === 'text') {
-    return block.text
-  }
-  return ''
+  return response.choices[0]?.message?.content || ''
 }
 
 /**
@@ -54,21 +50,20 @@ export async function callClaudeVision(options: {
   mimeType: string
   maxTokens?: number
 }): Promise<string> {
-  const response = await anthropic.messages.create({
+  const response = await router.chat.completions.create({
     model: CLAUDE_CONFIG.model,
     max_tokens: options.maxTokens || CLAUDE_CONFIG.max_tokens,
     temperature: 0.2,
-    system: options.system,
     messages: [
+      { role: 'system', content: options.system },
       {
         role: 'user',
         content: [
           {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: options.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-              data: options.imageBase64,
+            type: 'image_url',
+            image_url: {
+              url: `data:${options.mimeType};base64,${options.imageBase64}`,
+              detail: 'high',
             },
           },
           {
@@ -80,9 +75,5 @@ export async function callClaudeVision(options: {
     ],
   })
 
-  const block = response.content[0]
-  if (block.type === 'text') {
-    return block.text
-  }
-  return ''
+  return response.choices[0]?.message?.content || ''
 }

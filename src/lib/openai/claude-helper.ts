@@ -1,4 +1,4 @@
-import { router, CLAUDE_CONFIG } from './client'
+import { openai, GPT_CONFIG } from './client'
 
 interface ClaudeMessageOptions {
   system: string
@@ -8,13 +8,13 @@ interface ClaudeMessageOptions {
 }
 
 /**
- * Claude API 호출 (OpenRouter 경유, OpenAI 호환 형식)
+ * GPT-4o 호출 후 텍스트 응답 반환
  */
 export async function callClaude(options: ClaudeMessageOptions): Promise<string> {
-  const response = await router.chat.completions.create({
-    model: CLAUDE_CONFIG.model,
-    max_tokens: options.maxTokens || CLAUDE_CONFIG.max_tokens,
-    temperature: options.temperature ?? CLAUDE_CONFIG.temperature,
+  const response = await openai.chat.completions.create({
+    model: GPT_CONFIG.model,
+    max_tokens: options.maxTokens || GPT_CONFIG.max_tokens,
+    temperature: options.temperature ?? GPT_CONFIG.temperature,
     messages: [
       { role: 'system', content: options.system },
       { role: 'user', content: options.user },
@@ -25,23 +25,26 @@ export async function callClaude(options: ClaudeMessageOptions): Promise<string>
 }
 
 /**
- * Claude API 호출 후 JSON 파싱하여 반환
+ * GPT-4o 호출 후 JSON 파싱하여 반환
  */
 export async function callClaudeJSON<T = Record<string, unknown>>(options: ClaudeMessageOptions): Promise<T> {
-  const text = await callClaude({
-    ...options,
-    system: options.system + '\n\n반드시 유효한 JSON만 출력해. 다른 텍스트는 절대 포함하지 마.',
+  const response = await openai.chat.completions.create({
+    model: GPT_CONFIG.model,
+    max_tokens: options.maxTokens || GPT_CONFIG.max_tokens,
+    temperature: options.temperature ?? GPT_CONFIG.temperature,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: options.system + '\n\n반드시 유효한 JSON만 출력해.' },
+      { role: 'user', content: options.user },
+    ],
   })
 
-  // JSON 블록 추출 (```json ... ``` 또는 순수 JSON)
-  const jsonMatch = text.match(/```json\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/)
-  const jsonStr = jsonMatch ? jsonMatch[1] : text
-
-  return JSON.parse(jsonStr.trim()) as T
+  const text = response.choices[0]?.message?.content || '{}'
+  return JSON.parse(text) as T
 }
 
 /**
- * Claude Vision API 호출 (이미지 분석)
+ * GPT-4o Vision 호출 (이미지 분석)
  */
 export async function callClaudeVision(options: {
   system: string
@@ -50,10 +53,11 @@ export async function callClaudeVision(options: {
   mimeType: string
   maxTokens?: number
 }): Promise<string> {
-  const response = await router.chat.completions.create({
-    model: CLAUDE_CONFIG.model,
-    max_tokens: options.maxTokens || CLAUDE_CONFIG.max_tokens,
+  const response = await openai.chat.completions.create({
+    model: GPT_CONFIG.model,
+    max_tokens: options.maxTokens || GPT_CONFIG.max_tokens,
     temperature: 0.2,
+    response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: options.system },
       {

@@ -1,26 +1,6 @@
 import OpenAI from 'openai'
 
-// Claude via OpenRouter (OpenAI 호환 형식)
-let _router: OpenAI | null = null
-
-export const router: OpenAI = new Proxy({} as OpenAI, {
-  get(_, prop) {
-    if (!_router) {
-      _router = new OpenAI({
-        apiKey: process.env.OPENROUTER_API_KEY,
-        baseURL: 'https://openrouter.ai/api/v1',
-        defaultHeaders: {
-          'HTTP-Referer': 'https://drnote.app',
-          'X-Title': 'Dr.Note',
-        },
-      })
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (_router as any)[prop as string]
-  },
-})
-
-// OpenAI 클라이언트 (Whisper STT 전용 — 현재 미사용)
+// OpenAI 클라이언트 (GPT-4o + Whisper)
 let _openai: OpenAI | null = null
 
 export const openai: OpenAI = new Proxy({} as OpenAI, {
@@ -35,9 +15,9 @@ export const openai: OpenAI = new Proxy({} as OpenAI, {
   },
 })
 
-// Claude Opus 4 via OpenRouter
-export const CLAUDE_CONFIG = {
-  model: 'anthropic/claude-opus-4',
+// GPT-4o 설정
+export const GPT_CONFIG = {
+  model: 'gpt-4o',
   temperature: 0.3,
   max_tokens: 2000,
 }
@@ -49,7 +29,7 @@ export const WHISPER_CONFIG = {
   response_format: 'verbose_json' as const,
 }
 
-// 레거시 호환
-export const GPT_CONFIG = CLAUDE_CONFIG
-// 레거시 호환: anthropic → router
-export const anthropic = router
+// 호환용 alias
+export const CLAUDE_CONFIG = GPT_CONFIG
+export const router = openai
+export const anthropic = openai

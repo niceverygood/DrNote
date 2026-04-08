@@ -147,6 +147,9 @@ export default function DemoPage() {
   const getFieldContent = useCallback((key: string, chartStructured: ChartStructured, chartData: ChartData): string => {
     switch (key) {
       case 'cc': return chartStructured.cc
+      case 'progress': return chartStructured.progress || ''
+      case 'phx': return chartStructured.phx || ''
+      case 'pex': return chartStructured.pex || ''
       case 'pi': return chartStructured.pi
       case 'dx': return chartStructured.diagnosis.join('\n')
       case 'plan': return chartStructured.plan.map(p => `- ${p}`).join('\n')
@@ -161,6 +164,29 @@ export default function DemoPage() {
   }, [])
 
   // 자동 재진 감지: 현재 차트와 유사한 이전 기록 찾기
+  // 초진/재진에 따른 차트 필드 결정
+  const chartFields = useMemo(() => {
+    const ct = state.chartData?.consultation_type || consultationType
+    if (ct === 'follow_up') {
+      return [
+        { key: 'progress', label: '경과', badge: 'S', badgeColor: 'bg-pink-100 text-pink-700' },
+        { key: 'cc', label: '부위', badge: 'CC', badgeColor: 'bg-blue-100 text-blue-700' },
+        { key: 'dx', label: 'Diagnosis', badge: 'Dx', badgeColor: 'bg-amber-100 text-amber-700' },
+        { key: 'plan', label: 'Plan', badge: 'P', badgeColor: 'bg-purple-100 text-purple-700' },
+        { key: 'note', label: 'Note', badge: 'N', badgeColor: 'bg-gray-200 text-gray-600' },
+      ]
+    }
+    return [
+      { key: 'cc', label: 'Chief Complaint', badge: 'CC', badgeColor: 'bg-blue-100 text-blue-700' },
+      { key: 'pi', label: 'Present Illness', badge: 'PI', badgeColor: 'bg-green-100 text-green-700' },
+      { key: 'phx', label: 'Past History', badge: 'PHx', badgeColor: 'bg-orange-100 text-orange-700' },
+      { key: 'pex', label: 'Physical Exam', badge: 'P/Ex', badgeColor: 'bg-cyan-100 text-cyan-700' },
+      { key: 'dx', label: 'Diagnosis', badge: 'Dx', badgeColor: 'bg-amber-100 text-amber-700' },
+      { key: 'plan', label: 'Plan', badge: 'P', badgeColor: 'bg-purple-100 text-purple-700' },
+      { key: 'note', label: 'Note', badge: 'N', badgeColor: 'bg-gray-200 text-gray-600' },
+    ]
+  }, [state.chartData?.consultation_type, consultationType])
+
   const similarPastRecords = useMemo(() => {
     if (!state.chartData?.chart_structured) return []
     const currentCc = state.chartData.chart_structured.cc.toLowerCase()
@@ -186,14 +212,12 @@ export default function DemoPage() {
     let content = ''
 
     // 차트 필드만
-    chartFormat.fields
-      .filter(f => f.enabled)
-      .forEach(field => {
-        const fieldContent = getFieldContent(field.key, cs, state.chartData!)
-        if (fieldContent) {
-          content += `${fieldContent}\n`
-        }
-      })
+    chartFields.forEach(field => {
+      const fieldContent = getFieldContent(field.key, cs, state.chartData!)
+      if (fieldContent) {
+        content += `${fieldContent}\n`
+      }
+    })
 
     // 추가 정보
     const ai = additionalInfo
@@ -207,7 +231,7 @@ export default function DemoPage() {
 
     navigator.clipboard.writeText(content.trim().replace(/^\[.*?\]\s*/gm, ''))
     toast.success('차트 내용이 복사되었습니다')
-  }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
+  }, [state.chartData, chartFields, additionalInfo, getFieldContent])
 
   // 기록 불러오기
   const fetchRecords = useCallback(async () => {
@@ -461,14 +485,12 @@ export default function DemoPage() {
     const chartStructured = state.chartData.chart_structured
 
     let content = ''
-    chartFormat.fields
-      .filter(f => f.enabled)
-      .forEach(field => {
-        const fieldContent = getFieldContent(field.key, chartStructured, state.chartData!)
-        if (fieldContent) {
-          content += `${fieldContent}\n\n`
-        }
-      })
+    chartFields.forEach(field => {
+      const fieldContent = getFieldContent(field.key, chartStructured, state.chartData!)
+      if (fieldContent) {
+        content += `${fieldContent}\n\n`
+      }
+    })
 
     // 추가 정보 포함
     const ai = additionalInfo
@@ -482,7 +504,7 @@ export default function DemoPage() {
 
     navigator.clipboard.writeText(content.trim().replace(/^\[.*?\]\s*/gm, ''))
     toast.success('전체 복사되었습니다')
-  }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
+  }, [state.chartData, chartFields, additionalInfo, getFieldContent])
 
   // 키워드 하이라이트
   const highlightKeywords = (text: string) => {
@@ -800,8 +822,7 @@ export default function DemoPage() {
                 )}
 
                 <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
-                  {chartFormat.fields
-                    .filter(f => f.enabled)
+                  {chartFields
                     .map((field) => {
                       const content = getFieldContent(field.key, cs, state.chartData!)
                       if (!content) return null

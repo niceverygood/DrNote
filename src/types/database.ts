@@ -158,12 +158,17 @@ export type ConsultationStatus = Database['public']['Tables']['consultations']['
 // 초진/재진 타입
 export type ConsultationType = 'initial' | 'follow_up'
 
-// 구조화된 차트 (CC/PI/Dx/Plan)
+// 구조화된 차트 (초진/재진 통합)
 export interface ChartStructured {
   cc: string
   pi: string
   diagnosis: string[]
   plan: string[]
+  // 초진 전용 필드
+  phx?: string          // Past History (과거 병력)
+  pex?: string          // Physical Examination (이학적 검사)
+  // 재진 전용 필드
+  progress?: string     // 경과 한줄 ("많이 좋아졌다")
 }
 
 // 추가 정보 (PMH, 수술력, 약물, 알러지)

@@ -85,7 +85,7 @@ Plan: ${(cs.plan || []).join(', ')}`
     let chartData: ChartResponse
     try {
       const parsed = await callClaudeJSON<{
-        chart?: { cc?: string; pi?: string; diagnosis?: string[]; plan?: string[] }
+        chart?: { cc?: string; pi?: string; phx?: string; pex?: string; progress?: string; diagnosis?: string[]; plan?: string[] }
         note?: string
         keywords?: string[]
         consultation_type?: string
@@ -99,6 +99,9 @@ Plan: ${(cs.plan || []).join(', ')}`
         chart: {
           cc: parsed.chart?.cc || '',
           pi: parsed.chart?.pi || '',
+          phx: parsed.chart?.phx || '',
+          pex: parsed.chart?.pex || '',
+          progress: parsed.chart?.progress || '',
           diagnosis: Array.isArray(parsed.chart?.diagnosis) ? parsed.chart.diagnosis : [],
           plan: Array.isArray(parsed.chart?.plan) ? parsed.chart.plan : [],
         },

@@ -32,8 +32,8 @@ export const ORTHOPEDIC_SYSTEM_PROMPT = `너는 10년 차 정형외과 전문의
 
 {
   "chart": {
-    "cc": "[부위] [증상] (Chief Complaint - 한 줄)",
-    "pi": "[현병력 요약 - 환자가 말한 핵심 내용 2~3문장] (Present Illness)",
+    "cc": "부위 증상 (Chief Complaint - 한 줄, 대괄호 없이)",
+    "pi": "현병력 요약 - 환자가 말한 핵심 내용 2~3문장 (대괄호 없이)",
     "diagnosis": ["r/o 진단1", "r/o 진단2"],
     "plan": ["치료1", "치료2", "치료3"]
   },

@@ -205,7 +205,7 @@ export default function DemoPage() {
       if (ai.allergy) content += `Allergy: ${ai.allergy}\n`
     }
 
-    navigator.clipboard.writeText(content.trim())
+    navigator.clipboard.writeText(content.trim().replace(/^\[.*?\]\s*/gm, ''))
     toast.success('차트 내용이 복사되었습니다')
   }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
 
@@ -480,7 +480,7 @@ export default function DemoPage() {
       if (ai.allergy) content += `Allergy: ${ai.allergy}\n`
     }
 
-    navigator.clipboard.writeText(content.trim())
+    navigator.clipboard.writeText(content.trim().replace(/^\[.*?\]\s*/gm, ''))
     toast.success('전체 복사되었습니다')
   }, [state.chartData, chartFormat, additionalInfo, getFieldContent])
 

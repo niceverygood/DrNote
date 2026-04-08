@@ -26,8 +26,6 @@ import {
   Search,
   Clock,
   RefreshCw,
-  ChevronDown,
-  ChevronUp,
   Globe,
   GraduationCap,
   Users,
@@ -129,8 +127,6 @@ export default function DemoPage() {
     medication: '',
     allergy: '',
   })
-  const [showAdditionalInfo, setShowAdditionalInfo] = useState(false)
-
   // 번역
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null)
   const [translation, setTranslation] = useState<TranslationData | null>(null)
@@ -148,7 +144,16 @@ export default function DemoPage() {
     switch (key) {
       case 'cc': return chartStructured.cc
       case 'progress': return chartStructured.progress || ''
-      case 'phx': return chartStructured.phx || ''
+      case 'phx': {
+        // AI 추출 PHx + 수동 입력 추가정보 합치기
+        const parts: string[] = []
+        if (chartStructured.phx) parts.push(chartStructured.phx)
+        if (additionalInfo.pmh) parts.push(`PMH: ${additionalInfo.pmh}`)
+        if (additionalInfo.surgical_history) parts.push(`수술력: ${additionalInfo.surgical_history}`)
+        if (additionalInfo.medication) parts.push(`약물: ${additionalInfo.medication}`)
+        if (additionalInfo.allergy) parts.push(`알러지: ${additionalInfo.allergy}`)
+        return parts.join('\n')
+      }
       case 'pex': return chartStructured.pex || ''
       case 'pi': return chartStructured.pi
       case 'dx': return chartStructured.diagnosis.join('\n')
@@ -161,9 +166,8 @@ export default function DemoPage() {
         return ''
       }
     }
-  }, [])
+  }, [additionalInfo])
 
-  // 자동 재진 감지: 현재 차트와 유사한 이전 기록 찾기
   // 초진/재진에 따른 차트 필드 결정
   const chartFields = useMemo(() => {
     const ct = state.chartData?.consultation_type || consultationType
@@ -176,10 +180,11 @@ export default function DemoPage() {
         { key: 'note', label: 'Note', badge: 'N', badgeColor: 'bg-gray-200 text-gray-600' },
       ]
     }
+    // 초진: CC → PI → PHx(추가정보 통합) → P/Ex → Dx → Plan
     return [
       { key: 'cc', label: 'Chief Complaint', badge: 'CC', badgeColor: 'bg-blue-100 text-blue-700' },
       { key: 'pi', label: 'Present Illness', badge: 'PI', badgeColor: 'bg-green-100 text-green-700' },
-      { key: 'phx', label: 'Past History', badge: 'PHx', badgeColor: 'bg-orange-100 text-orange-700' },
+      { key: 'phx', label: 'PMH / 수술력 / 약물 / 알러지', badge: 'PHx', badgeColor: 'bg-orange-100 text-orange-700', editable: true },
       { key: 'pex', label: 'Physical Exam', badge: 'P/Ex', badgeColor: 'bg-cyan-100 text-cyan-700' },
       { key: 'dx', label: 'Diagnosis', badge: 'Dx', badgeColor: 'bg-amber-100 text-amber-700' },
       { key: 'plan', label: 'Plan', badge: 'P', badgeColor: 'bg-purple-100 text-purple-700' },
@@ -345,7 +350,6 @@ export default function DemoPage() {
   const resetState = useCallback(() => {
     setState(initialState)
     setAdditionalInfo({ pmh: '', surgical_history: '', medication: '', allergy: '' })
-    setShowAdditionalInfo(false)
     setTranslation(null)
     setSelectedLanguage(null)
     setPatientEducation(null)
@@ -847,6 +851,23 @@ export default function DemoPage() {
                           highlight={field.key === 'dx'}
                           translation={translationMap[field.key]}
                         >
+                          {/* PHx: 인라인 편집 가능 (빈칸이면 입력 폼) */}
+                          {field.key === 'phx' && (
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                              <input type="text" placeholder="PMH (기저질환)" value={additionalInfo.pmh}
+                                onChange={(e) => setAdditionalInfo(a => ({ ...a, pmh: e.target.value }))}
+                                className="px-2 py-1.5 text-xs border border-orange-200 rounded-md bg-orange-50/50 focus:outline-none focus:ring-1 focus:ring-orange-400 placeholder:text-orange-300" />
+                              <input type="text" placeholder="수술력" value={additionalInfo.surgical_history}
+                                onChange={(e) => setAdditionalInfo(a => ({ ...a, surgical_history: e.target.value }))}
+                                className="px-2 py-1.5 text-xs border border-orange-200 rounded-md bg-orange-50/50 focus:outline-none focus:ring-1 focus:ring-orange-400 placeholder:text-orange-300" />
+                              <input type="text" placeholder="현재 약물" value={additionalInfo.medication}
+                                onChange={(e) => setAdditionalInfo(a => ({ ...a, medication: e.target.value }))}
+                                className="px-2 py-1.5 text-xs border border-orange-200 rounded-md bg-orange-50/50 focus:outline-none focus:ring-1 focus:ring-orange-400 placeholder:text-orange-300" />
+                              <input type="text" placeholder="알러지" value={additionalInfo.allergy}
+                                onChange={(e) => setAdditionalInfo(a => ({ ...a, allergy: e.target.value }))}
+                                className="px-2 py-1.5 text-xs border border-orange-200 rounded-md bg-orange-50/50 focus:outline-none focus:ring-1 focus:ring-orange-400 placeholder:text-orange-300" />
+                            </div>
+                          )}
                           {field.key === 'dx' && (
                             <div className="mt-2 flex items-center gap-2 flex-wrap">
                               <button
@@ -906,49 +927,7 @@ export default function DemoPage() {
                 </div>
               </div>
 
-              {/* Additional Info - Collapsible */}
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <button
-                  onClick={() => setShowAdditionalInfo(!showAdditionalInfo)}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-                >
-                  <span className="font-medium text-gray-900">추가 정보 (PMH / 수술력 / 약물 / 알러지)</span>
-                  {showAdditionalInfo ? (
-                    <ChevronUp className="w-5 h-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                  )}
-                </button>
-
-                {showAdditionalInfo && (
-                  <div className="px-5 pb-5 space-y-3">
-                    <AdditionalField
-                      label="Past Medical History (PMH)"
-                      placeholder="고혈압, 당뇨 등 기저질환"
-                      value={additionalInfo.pmh}
-                      onChange={(v) => setAdditionalInfo(a => ({ ...a, pmh: v }))}
-                    />
-                    <AdditionalField
-                      label="Surgical History (수술력)"
-                      placeholder="이전 수술 이력"
-                      value={additionalInfo.surgical_history}
-                      onChange={(v) => setAdditionalInfo(a => ({ ...a, surgical_history: v }))}
-                    />
-                    <AdditionalField
-                      label="Medication (현재 복용약)"
-                      placeholder="현재 복용 중인 약물"
-                      value={additionalInfo.medication}
-                      onChange={(v) => setAdditionalInfo(a => ({ ...a, medication: v }))}
-                    />
-                    <AdditionalField
-                      label="Allergy (알러지)"
-                      placeholder="약물/음식 알러지"
-                      value={additionalInfo.allergy}
-                      onChange={(v) => setAdditionalInfo(a => ({ ...a, allergy: v }))}
-                    />
-                  </div>
-                )}
-              </div>
+              {/* 추가 정보는 초진 차트의 PHx 필드에 통합됨 */}
 
               {/* Patient Education */}
               {patientEducation && (
@@ -1139,31 +1118,6 @@ function ChartSection({
   )
 }
 
-// Additional Info Field
-function AdditionalField({
-  label,
-  placeholder,
-  value,
-  onChange,
-}: {
-  label: string
-  placeholder: string
-  value: string
-  onChange: (value: string) => void
-}) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-gray-600 mb-1 block">{label}</label>
-      <textarea
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={2}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-      />
-    </div>
-  )
-}
 
 // Education Item
 function EducationItem({ label, content }: { label: string; content: string }) {

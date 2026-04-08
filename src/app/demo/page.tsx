@@ -603,27 +603,28 @@ export default function DemoPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">진료 유형:</span>
-                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                <div className="flex gap-2">
                   <button
                     onClick={() => setConsultationType('initial')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    className={`flex flex-col items-center px-5 py-3 rounded-xl border-2 transition-all ${
                       consultationType === 'initial'
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                        ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                     }`}
                   >
-                    초진 (Initial)
+                    <span className="text-base font-bold">초진</span>
+                    <span className="text-[10px] mt-0.5">첫 방문 · 상세 기록</span>
                   </button>
                   <button
                     onClick={() => setConsultationType('follow_up')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    className={`flex flex-col items-center px-5 py-3 rounded-xl border-2 transition-all ${
                       consultationType === 'follow_up'
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700 shadow-sm'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                     }`}
                   >
-                    재진 (Follow-up)
+                    <span className="text-base font-bold">재진</span>
+                    <span className="text-[10px] mt-0.5">경과 관찰 · 변화 중심</span>
                   </button>
                 </div>
               </div>

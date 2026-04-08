@@ -117,17 +117,33 @@ export const ORTHOPEDIC_SYSTEM_PROMPT = `너는 10년 차 정형외과 전문의
 8. 반드시 유효한 JSON만 출력
 `
 
-// 초진 안내 텍스트
+// 초진 전용 프롬프트
 const INITIAL_VISIT_GUIDE = `이 환자는 초진(initial visit)입니다.
-- CC, PI를 상세히 작성
-- 과거 병력, 약물, 알러지 등이 언급되면 note에 기재
-- consultation_type을 "initial"로 설정`
 
-// 재진 안내 텍스트
+초진 차트 작성 규칙:
+- CC: 부위 + 주증상을 영문 약어로 기재 (예: Rt shldr pain)
+- PI: 발병 시기, 원인/계기, 통증 양상, 악화/완화 인자, 동반 증상을 상세히 기재 (3~4문장)
+- 환자가 언급한 과거 병력(PMH), 약물, 알러지는 반드시 note에 기재
+- Diagnosis: 감별진단을 넓게 잡아서 r/o로 기재 (2~3개)
+- Plan: 검사(X-ray, MRI 등) + 초기 치료(약물, 주사, PT) 포함
+- consultation_type을 반드시 "initial"로 설정
+- counselor_summary: 환자에게 처음 설명하는 톤으로 질환 설명 포함`
+
+// 재진 전용 프롬프트
 const FOLLOW_UP_GUIDE = `이 환자는 재진(follow-up visit)입니다.
-- CC에 f/u 표기
-- PI는 이전 치료 후 변화 위주로 간략하게 작성
-- consultation_type을 "follow_up"으로 설정`
+
+재진 차트 작성 규칙:
+- CC: 부위 + "f/u" 표기 (예: L-spine pain f/u)
+- PI: 이전 치료 후 변화를 중심으로 간결하게 작성 (1~2문장)
+  - 호전 정도 (예: "inj 후 50% 호전", "PT 후 ROM 개선")
+  - 잔여 증상 (예: "야간통 잔여", "일상생활 가능")
+  - 새로 발생한 증상 있으면 기재
+- Diagnosis: 기존 진단 유지 또는 변경 (r/o 제거 가능 시 확정 진단으로)
+- Plan: 치료 지속/변경/추가 여부 중심
+  - "지속" (예: PT 지속), "변경" (예: medication 변경), "추가" (예: inj 추가) 명시
+  - 호전되었으면 "경과 관찰", "f/u 2주" 등
+- consultation_type을 반드시 "follow_up"으로 설정
+- counselor_summary: 이전 치료 결과와 앞으로의 치료 방향 중심으로`
 
 export const SUMMARY_USER_PROMPT = (transcript: string) => `
 다음 진료 대화를 간결한 차트로 변환해줘:

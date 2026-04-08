@@ -191,7 +191,7 @@ export default function DemoPage() {
       .forEach(field => {
         const fieldContent = getFieldContent(field.key, cs, state.chartData!)
         if (fieldContent) {
-          content += `[${field.badge}] ${fieldContent}\n`
+          content += `${fieldContent}\n`
         }
       })
 
@@ -466,7 +466,7 @@ export default function DemoPage() {
       .forEach(field => {
         const fieldContent = getFieldContent(field.key, chartStructured, state.chartData!)
         if (fieldContent) {
-          content += `[${field.badge}] ${fieldContent}\n\n`
+          content += `${fieldContent}\n\n`
         }
       })
 

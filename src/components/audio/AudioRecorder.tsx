@@ -137,18 +137,80 @@ export function AudioRecorder({ onRecordingComplete, onAudioReady, disabled, aut
           </p>
         )}
 
-        {/* Error + 텍스트 입력 안내 */}
+        {/* Error + 마이크 권한 안내 + 텍스트 입력 */}
         {error && (
           <div className="w-full max-w-md space-y-3">
-            <div className="px-4 py-2 rounded-lg bg-red-50 border border-red-100">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-100">
+              <p className="text-sm text-red-600 font-medium">{error}</p>
             </div>
+
+            {/* 마이크 권한 설정 가이드 */}
+            <details className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <summary className="px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                <span>마이크 권한 설정 방법</span>
+                <span className="text-xs text-gray-400">펼치기</span>
+              </summary>
+              <div className="px-4 pb-4 space-y-4 text-sm text-gray-600">
+                {/* Chrome */}
+                <div>
+                  <p className="font-semibold text-gray-800 mb-1.5">Chrome</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>주소창 왼쪽 <span className="inline-block px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">🔒</span> 아이콘 클릭</li>
+                    <li>&quot;사이트 설정&quot; 클릭</li>
+                    <li>&quot;마이크&quot; → <strong>&quot;허용&quot;</strong>으로 변경</li>
+                    <li>페이지 새로고침 (F5)</li>
+                  </ol>
+                </div>
+
+                {/* Edge */}
+                <div>
+                  <p className="font-semibold text-gray-800 mb-1.5">Edge</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>주소창 왼쪽 자물쇠 아이콘 클릭</li>
+                    <li>&quot;이 사이트에 대한 권한&quot; 클릭</li>
+                    <li>&quot;마이크&quot; → <strong>&quot;허용&quot;</strong></li>
+                    <li>페이지 새로고침</li>
+                  </ol>
+                </div>
+
+                {/* Safari */}
+                <div>
+                  <p className="font-semibold text-gray-800 mb-1.5">Safari (Mac)</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>메뉴바 → Safari → 설정 → 웹사이트</li>
+                    <li>왼쪽 &quot;마이크&quot; 선택</li>
+                    <li>drnote.co.kr → <strong>&quot;허용&quot;</strong></li>
+                    <li>페이지 새로고침</li>
+                  </ol>
+                </div>
+
+                {/* Windows 시스템 */}
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="font-semibold text-gray-800 mb-1.5">Windows 시스템 설정</p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>설정 → 개인 정보 → 마이크</li>
+                    <li>&quot;앱에서 마이크에 액세스하도록 허용&quot; → <strong>켜기</strong></li>
+                    <li>&quot;데스크톱 앱의 마이크 액세스 허용&quot; → <strong>켜기</strong></li>
+                  </ol>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="w-full py-2 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors"
+                  >
+                    설정 완료 후 새로고침
+                  </button>
+                </div>
+              </div>
+            </details>
+
             {!showManualInput && (
               <button
                 onClick={() => setShowManualInput(true)}
                 className="text-sm text-teal-600 hover:text-teal-800 underline"
               >
-                텍스트로 직접 입력하기
+                또는 텍스트로 직접 입력하기
               </button>
             )}
           </div>

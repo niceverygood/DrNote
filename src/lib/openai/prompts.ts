@@ -46,7 +46,7 @@ const INITIAL_OUTPUT_FORMAT = `반드시 아래 JSON 형식으로만 응답해. 
 {
   "chart": {
     "cc": "부위 + 주증상 (영문 약어, 한 줄) 예: neck pain, both TZ, spont",
-    "pi": "발병 시기, 원인/계기, 통증 양상, 악화/완화 인자 (2~3문장)",
+    "pi": "아래 6가지를 빠짐없이 포함하여 상세 작성 (대화에서 언급된 내용 모두 반영, 5~8문장):\n1) 발병 시기 (언제부터)\n2) 원인/계기 (왜/어쩌다)\n3) 통증 양상 + 심해지거나 완화되는 상황/자세\n4) 직업/일/평소 자세\n5) 운동/활동량\n6) 이전 치료 경험 (있으면)",
     "phx": "과거 병력 약어로 (예: HTN, DM, ACT, SPRL). 없으면 빈 문자열",
     "pex": "이학적 검사 소견 약어로 (예: ROM limit, TTP+, McMurray+). 없으면 빈 문자열",
     "diagnosis": ["r/o 진단1", "r/o 진단2"],
@@ -62,45 +62,60 @@ const INITIAL_OUTPUT_FORMAT = `반드시 아래 JSON 형식으로만 응답해. 
   }
 }
 
+PI 작성 핵심 규칙:
+- 대화에서 환자가 말한 내용을 최대한 구체적으로 반영
+- "언제부터": 정확한 기간 (예: 2주 전, 3개월 전, 작년부터)
+- "왜/어쩌다": 원인 (예: 테니스 후, 교통사고, 자연 발생, 무거운 거 들다가)
+- "악화/완화": 어떤 동작/자세에서 심해지고 나아지는지 (예: 팔 올릴 때, 앉아있을 때, 아침에 심함)
+- "직업/자세": 사무직, 택배, 주부, 장시간 앉아서 일 등
+- "운동/활동": 헬스, 골프, 테니스, 운동 안 함 등
+- "이전 치료": 타병원 치료, 약 먹어봤는데 효과 없음 등
+- 대화에서 언급 안 된 항목은 생략 가능하지만, 언급된 내용은 절대 생략하지 마
+- 한글 + 의학 약어 혼용
+
 예시:
-입력: "목이 아프고 양쪽 승모근이 뻣뻣해요. 자연적으로 생겼어요. 전에 교통사고나 스포츠 부상은 없어요."
+입력: "목이 한 달 전부터 아프고 양쪽 승모근이 뻣뻣해요. 사무직이라 하루 8시간 컴퓨터 앞에 앉아있거든요. 특히 오후 되면 더 심해져요. 운동은 안 하고요. 자연적으로 생겼고 외상은 없어요. 전에 다른 병원에서 물리치료 받아봤는데 그때만 좀 나았어요."
 출력:
 {
   "chart": {
-    "cc": "neck pain, both TZ, spont",
-    "pi": "목 통증 및 양측 승모근 경직 호소. 자연 발생. 외상 Hx 없음.",
+    "cc": "neck pain, both TZ stiffness",
+    "pi": "1개월 전부터 목 통증 및 양측 승모근 경직 호소. 자연 발생, 외상 Hx 없음. 사무직으로 하루 8시간 좌식 근무 중. 오후에 통증 악화되는 양상. 평소 운동 안 함. 타 병원에서 PT 받은 적 있으나 일시적 효과만 있었음.",
     "phx": "",
     "pex": "",
-    "diagnosis": ["r/o C-HNP", "r/o MFS"],
-    "plan": ["C-spine X-ray", "PT + ESWT"]
+    "diagnosis": ["r/o C-HNP", "r/o MFS", "r/o TOS"],
+    "plan": ["C-spine X-ray", "PT + ESWT", "자세 교정 교육"]
   },
-  "note": "",
-  "keywords": ["neck", "TZ", "C-HNP", "MFS"],
+  "note": "장시간 좌식 근무, 이전 PT 효과 미미",
+  "keywords": ["neck", "TZ", "C-HNP", "MFS", "좌식"],
   "consultation_type": "initial",
   "counselor_summary": {
-    "explanation": "목 통증과 승모근 경직으로 경추 디스크 및 근막통증증후군 가능성 설명.",
-    "treatment_reason": "자연 발생 목 통증으로 영상 검사 후 물리치료 시작",
-    "treatment_items": ["경추 X-ray", "물리치료", "체외충격파"]
+    "explanation": "장시간 사무직 근무로 인한 목/승모근 통증. 경추 디스크 및 근막통증증후군 가능성. 영상 검사 후 치료 결정.",
+    "treatment_reason": "1개월 지속 + 이전 치료 효과 미미하여 정밀 검사 필요",
+    "treatment_items": ["경추 X-ray", "물리치료 + 체외충격파", "자세 교정 안내"]
   }
 }
 
-예시 2 (과거력 있는 경우):
-입력: "어깨가 3개월째 아프고 팔 올리기 힘들어요. 야간통도 있어요. 예전에 교통사고 당한 적 있고 척추 수술 받았어요."
+예시 2:
+입력: "어깨가 3개월째 아프고 팔 올리기 힘들어요. 야간통도 있어요. 예전에 교통사고 당한 적 있고 척추 수술 받았어요. 헬스를 좀 하는데 벤치프레스 할 때 특히 아파요. 직업은 택배 기사라 무거운 거 많이 들어요."
 출력:
 {
   "chart": {
     "cc": "Lt shldr pain",
-    "pi": "3개월 전부터 지속. ROM 제한 및 야간통 동반.",
+    "pi": "3개월 전부터 Lt shldr 통증 지속. ROM 제한 및 야간통 동반. 택배 기사로 중량물 반복 거상. 헬스 중 bench press 시 통증 악화. 야간 수면 시에도 통증으로 자주 깸. ACT Hx 있으며 이전 SPRL 시행.",
     "phx": "ACT, SPRL",
-    "pex": "ROM limit, Neer test (+)",
+    "pex": "ROM limit, Neer test (+), night pain (+)",
     "diagnosis": ["r/o RCS", "r/o impingement syndrome"],
     "plan": ["MRI shldr", "inj c steroid", "PT + manual E"]
   },
-  "note": "야간통 (+)",
-  "keywords": ["Lt shldr", "RCS", "ROM", "야간통", "MRI"],
+  "note": "야간통 (+), 택배 기사 (중량물 반복)",
+  "keywords": ["Lt shldr", "RCS", "ROM", "야간통", "MRI", "택배"],
   "consultation_type": "initial",
   "counselor_summary": {
-    "explanation": "어깨 통증 3개월 지속, 야간통 있어 회전근개 손상 가능성 설명. MRI 필요.",
+    "explanation": "어깨 통증 3개월 지속, 야간통 + 운동 시 악화. 직업 특성상 어깨 부담 큼. 회전근개 손상 가능성으로 MRI 필요.",
+    "treatment_reason": "ROM 제한 + 야간통 + 직업적 부담으로 정밀검사 + 주사치료 필요",
+    "treatment_items": ["어깨 MRI", "스테로이드 주사", "물리치료 + 도수치료"]
+  }
+}`
     "treatment_reason": "ROM 제한 및 야간통으로 정밀검사 + 주사치료 필요",
     "treatment_items": ["어깨 MRI", "스테로이드 주사", "물리치료 + 도수치료"]
   }

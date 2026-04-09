@@ -529,31 +529,20 @@ export default function DemoPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="btn-ghost p-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link href="/dashboard" className="btn-ghost p-1.5 shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-lg font-semibold text-gray-900">Dr.Note</h1>
+            <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">외래 진료</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/imaging" className="btn-ghost text-sm py-2 px-3">
-              <Scan className="w-4 h-4" />
-              영상분석
-            </Link>
-            <Link href="/pacs" className="btn-ghost text-sm py-2 px-3">
-              PACS
-            </Link>
-            <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">
-              <Users className="w-4 h-4" />
-              상담사
-            </Link>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className={`btn-ghost text-sm py-2 px-3 ${showHistory ? 'bg-gray-100' : ''}`}
+              className={`btn-ghost text-xs sm:text-sm py-1.5 px-2 sm:px-3 ${showHistory ? 'bg-gray-100' : ''}`}
             >
               <History className="w-4 h-4" />
-              기록
+              <span className="hidden sm:inline">기록</span>
             </button>
             {records.length > 0 && (
               <PatientTimeline
@@ -578,9 +567,17 @@ export default function DemoPage() {
                 }}
               />
             )}
-            <Link href="/dictionary" className="btn-ghost text-sm py-2 px-3">
-              <BookOpen className="w-4 h-4" />
-              사전
+            <Link href="/calendar" className="btn-ghost text-xs sm:text-sm py-1.5 px-2 sm:px-3">
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">예약</span>
+            </Link>
+            <Link href="/counselor" className="btn-ghost text-xs sm:text-sm py-1.5 px-2 sm:px-3 hidden sm:inline-flex">
+              <Users className="w-4 h-4" />
+              상담사
+            </Link>
+            <Link href="/imaging" className="btn-ghost text-xs sm:text-sm py-1.5 px-2 sm:px-3 hidden md:inline-flex">
+              <Scan className="w-4 h-4" />
+              영상
             </Link>
           </div>
         </div>

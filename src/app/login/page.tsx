@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { Loader2 } from 'lucide-react'
+import { BrandIcon } from '@/components/BrandIcon'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -44,13 +45,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
-            <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+          <div className="mx-auto mb-4 w-fit">
+            <BrandIcon size={80} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Dr.Note</h1>
-          <p className="text-gray-500 mt-2">AI 진료 보조 시스템</p>
+          <h1 className="text-2xl font-bold" style={{ color: '#0F1C3A' }}>Dr.Note</h1>
+          <p className="text-gray-500 mt-2">AI가 기록하고, 의사는 치료합니다</p>
         </div>
 
         {/* Login Card */}

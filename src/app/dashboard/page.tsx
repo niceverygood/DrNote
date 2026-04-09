@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { BrandIcon } from '@/components/BrandIcon'
 import {
   Mic, Bed, Calendar, Users, Scan, BookOpen, Settings, Shield,
   Stethoscope, Heart, FileText, ArrowRight, LogOut,
@@ -110,9 +111,7 @@ export default function DashboardPage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
-            </div>
+            <BrandIcon size={32} />
             <span className="text-lg font-semibold text-gray-900">Dr.Note</span>
           </div>
           <div className="flex items-center gap-4">

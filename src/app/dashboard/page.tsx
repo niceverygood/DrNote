@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Mic, Bed, Calendar, Users, Scan, BookOpen, Settings,
+  Mic, Bed, Calendar, Users, Scan, BookOpen, Settings, Shield,
   Stethoscope, Heart, FileText, ArrowRight, LogOut,
 } from 'lucide-react'
 
@@ -122,8 +122,12 @@ export default function DashboardPage() {
               <span className="text-gray-300">·</span>
               <span>{profile.hospital_name || HOSPITAL_TYPE_LABELS[profile.hospital_type]}</span>
             </div>
+            <button onClick={() => router.push('/admin')}
+              className="btn-ghost text-sm py-1.5 px-2.5" title="병원 관리">
+              <Shield className="w-4 h-4" />
+            </button>
             <button onClick={() => router.push('/onboarding')}
-              className="btn-ghost text-sm py-1.5 px-2.5">
+              className="btn-ghost text-sm py-1.5 px-2.5" title="설정 변경">
               <Settings className="w-4 h-4" />
             </button>
             <button onClick={handleLogout}

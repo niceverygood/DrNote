@@ -25,11 +25,43 @@ const ROLES: { value: Role; label: string; desc: string; icon: typeof Stethoscop
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const [mode, setMode] = useState<'select' | 'create' | 'join'>('select')
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [hospitalType, setHospitalType] = useState<HospitalType | null>(null)
   const [role, setRole] = useState<Role | null>(null)
   const [hospitalName, setHospitalName] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const handleJoinByCode = async () => {
+    if (!inviteCode) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'join_org', invite_code: inviteCode }),
+      })
+      const data = await res.json()
+      if (data.error) { toast.error(data.error); setLoading(false); return }
+
+      // 초대된 역할로 프로필 저장
+      const member = data.member
+      const orgRes = await fetch(`/api/org?org_id=${data.org_id || member.org_id}`)
+      const orgData = await orgRes.json()
+
+      localStorage.setItem('drnote-profile', JSON.stringify({
+        role: member.role,
+        hospital_type: orgData.org?.hospital_type || 'outpatient',
+        hospital_name: orgData.org?.name || '',
+        org_id: member.org_id,
+        onboarding_complete: true,
+      }))
+      toast.success(`${orgData.org?.name || '병원'}에 가입되었습니다!`)
+      router.push('/dashboard')
+    } catch { toast.error('가입에 실패했습니다') }
+    finally { setLoading(false) }
+  }
 
   const handleComplete = async () => {
     if (!hospitalType || !role) return
@@ -78,8 +110,69 @@ export default function OnboardingPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-          {/* Step 1: 병원 유형 */}
-          {step === 1 && (
+          {/* Mode Select: 신규 or 초대코드 */}
+          {mode === 'select' && (
+            <>
+              <h2 className="text-xl font-bold text-gray-900 mb-2 text-center">시작하기</h2>
+              <p className="text-sm text-gray-500 mb-6 text-center">병원을 등록하거나, 초대 코드로 가입하세요</p>
+
+              <div className="space-y-3">
+                <button onClick={() => { setMode('create'); setStep(1) }}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-teal-500 hover:bg-teal-50 transition-all text-left">
+                  <div className="w-12 h-12 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">병원 대표로 시작</span>
+                    <p className="text-sm text-gray-500">새 병원을 등록하고 직원을 초대합니다</p>
+                  </div>
+                </button>
+
+                <button onClick={() => setMode('join')}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-900">초대 코드로 가입</span>
+                    <p className="text-sm text-gray-500">대표에게 받은 코드를 입력합니다</p>
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Join by Code */}
+          {mode === 'join' && (
+            <>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">초대 코드 입력</h2>
+              <p className="text-sm text-gray-500 mb-6">병원 대표에게 받은 초대 코드를 입력하세요</p>
+
+              <input
+                type="text"
+                placeholder="예: DRN-A3F2"
+                value={inviteCode}
+                onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                className="w-full px-4 py-4 text-center text-xl font-mono font-bold tracking-widest border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                maxLength={8}
+              />
+
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setMode('select')}
+                  className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors">
+                  이전
+                </button>
+                <button onClick={handleJoinByCode} disabled={loading || inviteCode.length < 5}
+                  className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  가입하기
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Step 1: 병원 유형 (create mode) */}
+          {mode === 'create' && step === 1 && (
             <>
               <h2 className="text-xl font-bold text-gray-900 mb-2">병원 유형을 선택하세요</h2>
               <p className="text-sm text-gray-500 mb-6">유형에 따라 메뉴가 최적화됩니다</p>
@@ -116,7 +209,7 @@ export default function OnboardingPage() {
           )}
 
           {/* Step 2: 역할 */}
-          {step === 2 && (
+          {mode === 'create' && step === 2 && (
             <>
               <h2 className="text-xl font-bold text-gray-900 mb-2">역할을 선택하세요</h2>
               <p className="text-sm text-gray-500 mb-6">역할에 따라 보이는 메뉴가 달라집니다</p>
@@ -159,7 +252,7 @@ export default function OnboardingPage() {
           )}
 
           {/* Step 3: 병원명 + 완료 */}
-          {step === 3 && (
+          {mode === 'create' && step === 3 && (
             <>
               <h2 className="text-xl font-bold text-gray-900 mb-2">거의 다 됐습니다!</h2>
               <p className="text-sm text-gray-500 mb-6">병원명을 입력하세요 (선택)</p>

@@ -1,11 +1,11 @@
 {
-  "name": "Dr.Note - AI 진료 보조",
+  "name": "Dr.Note — AI 진료 보조",
   "short_name": "Dr.Note",
-  "description": "진료 대화를 녹음하면 AI가 차트 + 보험코드 + 처방전까지 한번에 완성합니다",
-  "start_url": "/demo",
+  "description": "AI가 기록하고, 의사는 치료합니다",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0D9488",
+  "background_color": "#F5F3E8",
+  "theme_color": "#0F1C3A",
   "orientation": "any",
   "icons": [
     {

@@ -32,10 +32,14 @@ const pretendard = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Dr.Note - 정형외과 AI 차트 요약',
-  description: '진료 녹음을 SOAP 형식의 전문 차트로 자동 변환합니다. 정형외과 전문 약어를 활용한 AI 기반 의료 기록 솔루션.',
-  keywords: ['정형외과', '진료 기록', 'SOAP', 'AI 요약', '의료 차트', 'EMR'],
+  title: 'Dr.Note — AI가 기록하고, 의사는 치료합니다',
+  description: 'AI가 진료 중 대화를 실시간으로 분석하여 KCD 코드와 EMR 입력 데이터를 자동 생성합니다.',
+  keywords: ['정형외과', '진료 기록', 'AI 차트', 'KCD', 'EMR', 'Dr.Note'],
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/icons/icon.svg',
+  },
 }
 
 export default function RootLayout({
@@ -46,10 +50,10 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${pretendard.variable}`}>
       <head>
-        <meta name="theme-color" content="#0D9488" />
+        <meta name="theme-color" content="#0F1C3A" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Dr.Note" />
-        <link rel="apple-touch-icon" href="/icons/icon.svg" />
       </head>
       <body className="min-h-screen font-sans antialiased">
         {children}

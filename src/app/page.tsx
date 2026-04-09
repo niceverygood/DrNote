@@ -381,23 +381,52 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <BrandIcon size={24} />
-            <span className="text-sm font-medium text-gray-900">Dr.Note</span>
+      <footer className="py-12 px-6 border-t border-gray-200 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* 회사 정보 */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <BrandIcon size={28} />
+                <span className="text-lg font-bold" style={{ color: '#0F1C3A' }}>Dr.Note</span>
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                AI가 기록하고, 의사는 치료합니다.
+                <br />
+                진료 대화를 녹음하면 AI가 차트 + 보험코드 + 처방전을 자동 완성합니다.
+              </p>
+            </div>
+
+            {/* 서비스 */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">서비스</h4>
+              <div className="space-y-2 text-sm text-gray-500">
+                <Link href="/login" className="block hover:text-gray-700">외래 진료</Link>
+                <Link href="/login" className="block hover:text-gray-700">병동 관리</Link>
+                <Link href="/login" className="block hover:text-gray-700">예약 캘린더</Link>
+                <Link href="/login" className="block hover:text-gray-700">AI 영상 분석</Link>
+              </div>
+            </div>
+
+            {/* 연락처 */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">문의</h4>
+              <div className="space-y-2 text-sm text-gray-500">
+                <p>dev@bottlecorp.kr</p>
+                <p>010-2309-7443</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-6 text-sm text-gray-400">
-            <Link href="/demo" className="hover:text-gray-700">의사용</Link>
-            <Link href="/counselor" className="hover:text-gray-700">상담사용</Link>
-            <Link href="/calendar" className="hover:text-gray-700">예약</Link>
-            <Link href="/inpatient" className="hover:text-gray-700">병동</Link>
-            <Link href="/imaging" className="hover:text-gray-700">영상분석</Link>
-            <Link href="/dictionary" className="hover:text-gray-700">용어사전</Link>
+
+          {/* 하단 사업자 정보 */}
+          <div className="pt-8 border-t border-gray-100">
+            <div className="text-xs text-gray-400 space-y-1">
+              <p>주식회사 바틀 | 대표 한승수 | 사업자등록번호 376-87-01076</p>
+              <p>경기도 성남시 분당구 판교로289번길 20, 2층 8층 (삼평동, 판교테크노밸리 스타트업 캠퍼스)</p>
+              <p>통신판매업신고 제 2019-성남분당B-0177 호</p>
+              <p className="pt-2">© 2025 Bottle Inc. All rights reserved.</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-400">
-            © 2025 Dr.Note. 정형외과 AI 진료 보조.
-          </p>
         </div>
       </footer>
     </div>

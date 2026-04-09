@@ -531,7 +531,7 @@ export default function DemoPage() {
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Link href="/dashboard" className="btn-ghost p-1.5 shrink-0">
+            <Link href="/" className="btn-ghost p-1.5 shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">외래 진료</h1>

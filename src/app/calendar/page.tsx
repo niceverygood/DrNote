@@ -203,7 +203,7 @@ export default function CalendarPage() {
           {/* 상단: 타이틀 + 주요 액션 */}
           <div className="h-14 flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
-              <Link href="/dashboard" className="btn-ghost p-1.5 shrink-0">
+              <Link href="/" className="btn-ghost p-1.5 shrink-0">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <CalendarIcon className="w-5 h-5 text-teal-600 shrink-0" />

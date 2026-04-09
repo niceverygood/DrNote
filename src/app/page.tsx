@@ -49,7 +49,7 @@ export default function Home() {
               <BookOpen className="w-4 h-4" />
               용어 사전
             </Link>
-            <Link href="/login" className="btn-primary text-sm py-2 px-4">
+            <Link href="/demo" className="btn-primary text-sm py-2 px-4">
               시작하기
             </Link>
           </div>
@@ -77,12 +77,12 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <Link href="/login" className="btn-primary text-base px-8 py-4">
+            <Link href="/demo" className="btn-primary text-base px-8 py-4">
               <Mic className="w-5 h-5" />
               의사용 시작하기
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="/login" className="btn-secondary text-base px-8 py-4">
+            <Link href="/counselor" className="btn-secondary text-base px-8 py-4">
               <Users className="w-5 h-5" />
               상담사/간호사용
             </Link>
@@ -248,7 +248,7 @@ export default function Home() {
                 <GuideStep step="4" text="보험코드 + 처방 자동 추천 확인" />
                 <GuideStep step="5" text="[EMR 복사] → 붙여넣기 → [다음 환자]" />
                 <div className="pt-4">
-                  <Link href="/login" className="btn-primary w-full justify-center py-3">
+                  <Link href="/demo" className="btn-primary w-full justify-center py-3">
                     <Mic className="w-4 h-4" />
                     의사용 시작하기
                     <ArrowRight className="w-4 h-4" />
@@ -367,7 +367,7 @@ export default function Home() {
             의사의 시간을 환자에게 돌려드립니다.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/login" className="btn-primary text-base px-8 py-4 inline-flex">
+            <Link href="/demo" className="btn-primary text-base px-8 py-4 inline-flex">
               <Mic className="w-5 h-5" />
               의사용 시작하기
               <ArrowRight className="w-5 h-5" />
@@ -401,10 +401,10 @@ export default function Home() {
             <div>
               <h4 className="text-sm font-semibold text-gray-900 mb-3">서비스</h4>
               <div className="space-y-2 text-sm text-gray-500">
-                <Link href="/login" className="block hover:text-gray-700">외래 진료</Link>
-                <Link href="/login" className="block hover:text-gray-700">병동 관리</Link>
-                <Link href="/login" className="block hover:text-gray-700">예약 캘린더</Link>
-                <Link href="/login" className="block hover:text-gray-700">AI 영상 분석</Link>
+                <Link href="/demo" className="block hover:text-gray-700">외래 진료</Link>
+                <Link href="/inpatient" className="block hover:text-gray-700">병동 관리</Link>
+                <Link href="/calendar" className="block hover:text-gray-700">예약 캘린더</Link>
+                <Link href="/imaging" className="block hover:text-gray-700">AI 영상 분석</Link>
               </div>
             </div>
 

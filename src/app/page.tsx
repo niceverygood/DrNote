@@ -52,7 +52,7 @@ export default function Home() {
               <BookOpen className="w-4 h-4" />
               용어 사전
             </Link>
-            <Link href="/demo" className="btn-primary text-sm py-2 px-4">
+            <Link href="/login" className="btn-primary text-sm py-2 px-4">
               시작하기
             </Link>
           </div>
@@ -80,12 +80,12 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <Link href="/demo" className="btn-primary text-base px-8 py-4">
+            <Link href="/login" className="btn-primary text-base px-8 py-4">
               <Mic className="w-5 h-5" />
               의사용 시작하기
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="/counselor" className="btn-secondary text-base px-8 py-4">
+            <Link href="/login" className="btn-secondary text-base px-8 py-4">
               <Users className="w-5 h-5" />
               상담사/간호사용
             </Link>
@@ -251,7 +251,7 @@ export default function Home() {
                 <GuideStep step="4" text="보험코드 + 처방 자동 추천 확인" />
                 <GuideStep step="5" text="[EMR 복사] → 붙여넣기 → [다음 환자]" />
                 <div className="pt-4">
-                  <Link href="/demo" className="btn-primary w-full justify-center py-3">
+                  <Link href="/login" className="btn-primary w-full justify-center py-3">
                     <Mic className="w-4 h-4" />
                     의사용 시작하기
                     <ArrowRight className="w-4 h-4" />
@@ -370,7 +370,7 @@ export default function Home() {
             의사의 시간을 환자에게 돌려드립니다.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/demo" className="btn-primary text-base px-8 py-4 inline-flex">
+            <Link href="/login" className="btn-primary text-base px-8 py-4 inline-flex">
               <Mic className="w-5 h-5" />
               의사용 시작하기
               <ArrowRight className="w-5 h-5" />

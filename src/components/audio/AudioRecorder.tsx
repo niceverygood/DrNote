@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect, useState } from 'react'
 import { useAudioRecorder } from '@/hooks/useAudioRecorder'
-import { Mic, Square, Pause, Play, RotateCcw, Upload, Sparkles } from 'lucide-react'
+import { Mic, Square, Pause, Play, RotateCcw, Upload, Sparkles, FileText } from 'lucide-react'
 
 interface AudioRecorderProps {
   onRecordingComplete: (transcript: string) => void  // 음성인식된 텍스트 전달
@@ -39,6 +39,8 @@ export function AudioRecorder({ onRecordingComplete, onAudioReady, disabled, aut
   }, [state, transcript, autoSubmit, onRecordingComplete])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [manualText, setManualText] = useState('')
+  const [showManualInput, setShowManualInput] = useState(false)
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -135,10 +137,43 @@ export function AudioRecorder({ onRecordingComplete, onAudioReady, disabled, aut
           </p>
         )}
 
-        {/* Error */}
+        {/* Error + 텍스트 입력 안내 */}
         {error && (
-          <div className="px-4 py-2 rounded-lg bg-red-50 border border-red-100">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="w-full max-w-md space-y-3">
+            <div className="px-4 py-2 rounded-lg bg-red-50 border border-red-100">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+            {!showManualInput && (
+              <button
+                onClick={() => setShowManualInput(true)}
+                className="text-sm text-teal-600 hover:text-teal-800 underline"
+              >
+                텍스트로 직접 입력하기
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 텍스트 직접 입력 (마이크 없을 때 대안) */}
+        {(showManualInput || error) && showManualInput && (
+          <div className="w-full max-w-md space-y-3">
+            <textarea
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              placeholder="진료 대화 내용을 직접 입력하세요..."
+              rows={5}
+              className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+            />
+            <button
+              onClick={() => {
+                if (manualText.length >= 5) onRecordingComplete(manualText)
+              }}
+              disabled={disabled || manualText.length < 5}
+              className="btn-primary w-full py-3 disabled:opacity-50"
+            >
+              <FileText className="w-4 h-4" />
+              AI 분석 시작
+            </button>
           </div>
         )}
 

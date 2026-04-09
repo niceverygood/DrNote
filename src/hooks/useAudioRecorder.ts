@@ -182,7 +182,14 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       // Web Speech API 음성인식 시작
       startSpeechRecognition()
     } catch (err) {
-      setError('마이크 접근 권한이 필요합니다.')
+      const errorObj = err as Error
+      if (errorObj.name === 'NotFoundError' || errorObj.name === 'DevicesNotFoundError') {
+        setError('마이크를 찾을 수 없습니다. 마이크를 연결하거나 아래 텍스트 입력을 이용하세요.')
+      } else if (errorObj.name === 'NotAllowedError' || errorObj.name === 'PermissionDeniedError') {
+        setError('마이크 권한이 차단되었습니다. 브라우저 설정에서 마이크를 허용해주세요.')
+      } else {
+        setError('마이크 접근에 실패했습니다. 텍스트 입력을 이용하세요.')
+      }
       console.error('Recording error:', err)
     }
   }, [startTimer, startSpeechRecognition])

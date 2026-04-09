@@ -15,6 +15,7 @@ import {
   Star,
   Scan,
   Calendar as CalendarIcon,
+  Bed,
   Smartphone,
   Download,
   Monitor,
@@ -38,6 +39,10 @@ export default function Home() {
             <Link href="/calendar" className="btn-ghost text-sm py-2 px-3">
               <CalendarIcon className="w-4 h-4" />
               예약
+            </Link>
+            <Link href="/inpatient" className="btn-ghost text-sm py-2 px-3">
+              <Bed className="w-4 h-4" />
+              병동
             </Link>
             <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">
               <Users className="w-4 h-4" />
@@ -393,6 +398,7 @@ export default function Home() {
             <Link href="/demo" className="hover:text-gray-700">의사용</Link>
             <Link href="/counselor" className="hover:text-gray-700">상담사용</Link>
             <Link href="/calendar" className="hover:text-gray-700">예약</Link>
+            <Link href="/inpatient" className="hover:text-gray-700">병동</Link>
             <Link href="/imaging" className="hover:text-gray-700">영상분석</Link>
             <Link href="/dictionary" className="hover:text-gray-700">용어사전</Link>
           </div>

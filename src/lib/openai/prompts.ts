@@ -116,10 +116,6 @@ PI 작성 핵심 규칙:
     "treatment_items": ["어깨 MRI", "스테로이드 주사", "물리치료 + 도수치료"]
   }
 }`
-    "treatment_reason": "ROM 제한 및 야간통으로 정밀검사 + 주사치료 필요",
-    "treatment_items": ["어깨 MRI", "스테로이드 주사", "물리치료 + 도수치료"]
-  }
-}`
 
 // 재진 전용 프롬프트
 const FOLLOW_UP_GUIDE = `이 환자는 재진(follow-up visit)입니다.

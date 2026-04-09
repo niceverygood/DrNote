@@ -199,41 +199,42 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="btn-ghost p-2">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5 text-teal-600" />
-              <h1 className="text-lg font-semibold text-gray-900">예약 캘린더</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* 상단: 타이틀 + 주요 액션 */}
+          <div className="h-14 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <Link href="/" className="btn-ghost p-1.5 shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <CalendarIcon className="w-5 h-5 text-teal-600 shrink-0" />
+              <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">예약</h1>
+              {pendingCount > 0 && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] sm:text-xs font-medium rounded-full animate-pulse shrink-0">
+                  <Bell className="w-3 h-3" />
+                  {pendingCount}
+                </span>
+              )}
             </div>
-            {pendingCount > 0 && (
-              <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full animate-pulse">
-                <Bell className="w-3 h-3" />
-                대기 {pendingCount}건
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowCallRecorder(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <Phone className="w-4 h-4" />
-              통화 녹음
-            </button>
-            <button onClick={handleManualAdd} className="btn-ghost text-sm py-2 px-3">
-              <Plus className="w-4 h-4" />
-              수동 추가
-            </button>
-            <Link href="/demo" className="btn-ghost text-sm py-2 px-3">진료실</Link>
-            <Link href="/counselor" className="btn-ghost text-sm py-2 px-3">상담사</Link>
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <button
+                onClick={() => setShowCallRecorder(true)}
+                className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                <span className="hidden sm:inline">통화 녹음</span>
+              </button>
+              <button onClick={handleManualAdd} className="btn-ghost text-xs sm:text-sm py-2 px-2 sm:px-3">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">추가</span>
+              </button>
+              <Link href="/demo" className="btn-ghost text-xs sm:text-sm py-2 px-2 sm:px-3 hidden sm:inline-flex">진료실</Link>
+              <Link href="/counselor" className="btn-ghost text-xs sm:text-sm py-2 px-2 sm:px-3 hidden sm:inline-flex">상담사</Link>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Left - Week View */}
           <div className="lg:col-span-3">

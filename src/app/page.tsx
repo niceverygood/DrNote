@@ -13,6 +13,7 @@ import {
   Globe,
   Users,
   Clock,
+  Heart,
   Star,
   Scan,
   Calendar as CalendarIcon,
@@ -85,6 +86,10 @@ export default function Home() {
             <Link href="/counselor" className="btn-secondary text-base px-8 py-4">
               <Users className="w-5 h-5" />
               상담사/간호사용
+            </Link>
+            <Link href="/patient" className="btn-secondary text-base px-8 py-4">
+              <Heart className="w-5 h-5" />
+              환자용
             </Link>
           </div>
 

@@ -128,15 +128,23 @@ export async function POST(request: NextRequest) {
 
     // 퇴원 처리
     if (action === 'discharge') {
+      const dischargeDate = new Date().toISOString().split('T')[0]
       if (supabase) {
         const { data, error } = await supabase
           .from('inpatients')
-          .update({ status: 'discharged', discharge_date: new Date().toISOString().split('T')[0] })
+          .update({ status: 'discharged', discharge_date: dischargeDate })
           .eq('id', body.inpatient_id)
           .select().single()
         if (error) throw error
         return NextResponse.json({ patient: data })
       }
+      // 로컬 폴백
+      const idx = localInpatients.findIndex(p => p.id === body.inpatient_id)
+      if (idx >= 0) {
+        localInpatients[idx] = { ...localInpatients[idx], status: 'discharged', discharge_date: dischargeDate }
+        return NextResponse.json({ patient: localInpatients[idx], source: 'local' })
+      }
+      return NextResponse.json({ error: '환자를 찾을 수 없습니다.' }, { status: 404 })
     }
 
     return NextResponse.json({ error: '잘못된 action' }, { status: 400 })
